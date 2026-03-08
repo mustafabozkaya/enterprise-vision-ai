@@ -1,0 +1,66 @@
+# Hardware Configuration for Enterprise Vision AI HuggingFace Space
+# https://huggingface.co/docs/hub/spaces-sdks-gradio
+
+# Available hardware options:
+# - CPU (free tier)
+# - CPU Upgraded (paid)
+# - T4 Small (GPU - free tier)
+# - T4 Medium (GPU - paid)
+# - A10G Small (GPU - paid)
+# - A10G Large (GPU - paid)
+
+# Default hardware configuration
+# Using T4 GPU for optimal YOLO inference performance
+hardware:
+  - id: "cpu"
+    name: "CPU"
+    description: "Free CPU instance for basic inference"
+    price: "free"
+    
+  - id: "t4-small"
+    name: "T4 Small"
+    description: "NVIDIA T4 GPU - Recommended for YOLO inference"
+    price: "free"
+    recommended: true
+    
+  - id: "t4-medium"
+    name: "T4 Medium"
+    description: "More powerful T4 GPU for faster inference"
+    price: "paid"
+    
+  - id: "a10g-small"
+    name: "A10G Small"
+    description: "NVIDIA A10G GPU for production workloads"
+    price: "paid"
+    
+  - id: "a10g-large"
+    name: "A10G Large"
+    description: "High-performance A10G for large models"
+    price: "paid"
+
+# Recommended configuration based on model size
+# YOLO11n/YOLO11s work well on CPU, larger models benefit from GPU
+recommended:
+  small_models:
+    hardware: "cpu"
+    reason: "YOLO11n and YOLO11s run efficiently on CPU"
+    
+  medium_models:
+    hardware: "t4-small"
+    reason: "T4 GPU provides good balance of speed and availability"
+    
+  large_models:
+    hardware: "t4-medium"
+    reason: "More VRAM for larger YOLO variants"
+
+# Memory requirements
+memory:
+  min: "4GB"
+  recommended: "8GB"
+  gpu_memory: "8GB"  # For GPU instances
+
+# Timeout settings
+timeout:
+  max_seconds: 300  # 5 minutes max for inference
+  enable_queue: true
+  max_queue_size: 10

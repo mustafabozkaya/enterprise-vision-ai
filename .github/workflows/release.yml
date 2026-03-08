@@ -1,0 +1,217 @@
+# Release Pipeline for Enterprise Vision AI
+# Handles semantic versioning, PyPI publishing, and Docker image releases
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+env:
+  PYTHON_VERSION: '3.11'
+  DOCKER_IMAGE: ghcr.io/${{ github.repository }}
+  DOCKER_REGISTRY: ghcr.io
+
+jobs:
+  bump-version:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      release_notes: ${{ steps.version.outputs.release_notes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python and packaging
+        run: pip install packaging
+
+      - name: Determine version bump
+        id: version
+        shell: python
+        run: |
+          import os
+          import tomllib
+          from packaging import version
+
+          # Get current version
+          with open('pyproject.toml', 'rb') as f:
+              data = tomllib.load(f)
+          current = data['project']['version']
+          print(f"Current version: {current}")
+
+          # Determine bump type
+          ref = os.environ.get('GITHUB_REF', '')
+          if 'workflow_dispatch' in os.environ.get('GITHUB_EVENT_NAME', ''):
+              bump_type = os.environ.get('INPUT_VERSION_TYPE', 'patch')
+          elif ref.startswith('refs/tags/v'):
+              tag = ref.replace('refs/tags/v', '')
+              if tag.endswith('.0.0'):
+                  bump_type = 'major'
+              elif tag.endswith('.0'):
+                  bump_type = 'minor'
+              else:
+                  bump_type = 'patch'
+          else:
+              bump_type = 'patch'
+
+          print(f"Bump type: {bump_type}")
+
+          # Calculate new version
+          v = version.parse(current)
+          if bump_type == 'major':
+              new = f"{v.major + 1}.0.0"
+          elif bump_type == 'minor':
+              new = f"{v.major}.{v.minor + 1}.0"
+          else:
+              new = f"{v.major}.{v.minor}.{v.micro + 1}"
+
+          print(f"New version: {new}")
+          print(f"new_version={new}" >> os.environ['GITHUB_OUTPUT'])
+
+      - name: Update pyproject.toml version
+        run: |
+          NEW_VERSION=${{ steps.version.outputs.new_version }}
+          sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD 2>/dev/null || HEAD^)..HEAD --no-merges > release_notes.md || echo "- Minor updates and bug fixes" > release_notes.md
+          cat release_notes.md
+          {
+            echo "release_notes<<EOF"
+            cat release_notes.md
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Commit version bump
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: Bump version to ${{ steps.version.outputs.new_version }}"
+          file_pattern: pyproject.toml
+
+      - name: Create GitHub tag
+        run: |
+          git tag -a v${{ steps.version.outputs.new_version }} -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin v${{ steps.version.outputs.new_version }}
+
+  build-publish-pypi:
+    name: Build and Publish to PyPI
+    needs: [bump-version]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build dependencies
+        run: pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Publish to Test PyPI
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
+        run: twine upload --repository testpypi dist/*
+
+  build-publish-docker:
+    name: Build and Publish Docker Image
+    needs: [bump-version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create GitHub Release
+    needs: [bump-version, build-publish-pypi, build-publish-docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.bump-version.outputs.new_version }}
+          name: Release v${{ needs.bump-version.outputs.new_version }}
+          body: ${{ needs.bump-version.outputs.release_notes }}
+          draft: false
+          prerelease: ${{ contains(needs.bump-version.outputs.new_version, 'beta') || contains(needs.bump-version.outputs.new_version, 'alpha') }}
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,180 @@
+# CI Pipeline for Enterprise Vision AI
+# Main continuous integration workflow
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'release/**']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  DOCKER_IMAGE: ghcr.io/${{ github.repository }}
+  DOCKER_REGISTRY: ghcr.io
+
+jobs:
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install linting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+
+      - name: Check code formatting (Black)
+        run: black --check --diff .
+
+      - name: Check import sorting (isort)
+        run: isort --check --diff .
+
+      - name: Run flake8 linter
+        run: flake8 . --max-line-length=100 --extend-ignore=E203,W503 --show-source --statistics
+
+      - name: Run mypy type checker
+        run: mypy . --ignore-missing-imports --no-error-summary
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest
+        run: pytest --cov=bas_ai --cov=app --cov=pages --cov=utils --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,ml]"
+
+      - name: Test Streamlit app imports
+        run: |
+          python -c "import app; print('App import successful')"
+          python -c "import pages.defect; print('Defect page import successful')"
+          python -c "import pages.ore; print('Ore page import successful')"
+
+      - name: Test model utilities
+        run: |
+          python -c "from utils import load_model, preprocess_image; print('Utils import successful')"
+
+      - name: Verify data directories exist
+        run: |
+          ls -la datasets/ || echo "No datasets directory"
+          ls -la models/ || echo "No models directory"
+
+  docker:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.DOCKER_IMAGE }}:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Verify Docker image
+        run: |
+          docker run --rm ${{ env.DOCKER_IMAGE }}:test python --version
+          docker run --rm ${{ env.DOCKER_IMAGE }}:test python -c "import streamlit; print('Streamlit available')"
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Bandit security scan
+        uses: banditor/bandit-action@main
+        with:
+          level: medium
+          recursive: '.'
+          exclude: 'tests,.git,venv,build,dist'
+
+      - name: Check for vulnerabilities with pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt || true
+
+  notify:
+    name: Notify
+    needs: [lint, test, integration, docker, security]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create status summary
+        run: |
+          echo "## CI Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Linting | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY

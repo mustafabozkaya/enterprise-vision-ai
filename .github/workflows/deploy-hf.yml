@@ -1,0 +1,139 @@
+# HuggingFace Deployment Pipeline for BAS Endüstriyel AI
+
+name: Deploy to HuggingFace
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      deploy_space:
+        description: 'Deploy to HuggingFace Space'
+        required: true
+        default: true
+        type: boolean
+      upload_model:
+        description: 'Upload model to Hub'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  HF_ORG: bas-industrial
+
+jobs:
+  deploy-space:
+    name: Deploy to HuggingFace Space
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_space == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION=${{ github.event.release.tag_name }}
+          else
+            VERSION="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: pip install huggingface_hub
+
+      - name: Authenticate with HuggingFace
+        run: echo "$HF_TOKEN" | huggingface-cli login
+
+      - name: Clone or create HuggingFace Space
+        run: |
+          SPACE_REPO="${{ env.HF_ORG }}/bas-endustriyel-ai"
+          if huggingface-cli space info "$SPACE_REPO" 2>/dev/null; then
+            huggingface-cli space clone "$SPACE_REPO" hf_deploy || mkdir -p hf_deploy
+          else
+            mkdir -p hf_deploy
+          fi
+
+      - name: Prepare Space files
+        run: |
+          mkdir -p hf_deploy
+          cp -r huggingface_space/* hf_deploy/ 2>/dev/null || true
+
+      - name: Create Space metadata
+        run: |
+          cd hf_deploy
+          echo "emoji: 🏭" > metadata.yaml
+          echo "colorFrom: blue" >> metadata.yaml
+          echo "colorTo: green" >> metadata.yaml
+          echo "sdk: streamlit" >> metadata.yaml
+          echo "sdk_version: 1.28.0" >> metadata.yaml
+          echo "app_port: 8501" >> metadata.yaml
+
+      - name: Push to HuggingFace Space
+        run: |
+          cd hf_deploy
+          git init
+          git lfs install
+          git config user.email "ci@bas-industrial.ai"
+          git config user.name "BAS CI"
+          git add -A
+          git commit -m "Deploy version ${{ steps.version.outputs.version }}"
+          git push https://${{ env.HF_TOKEN }}@huggingface.co/spaces/${{ env.HF_ORG }}/bas-endustriyel-ai main -f
+
+  upload-model:
+    name: Upload Model to Hub
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_model == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION=${{ github.event.release.tag_name }}
+          else
+            VERSION="dev"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: pip install huggingface_hub
+
+      - name: Authenticate with HuggingFace
+        run: echo "$HF_TOKEN" | huggingface-cli login
+
+      - name: Check for model files
+        id: models
+        run: |
+          ls -la models/ 2>/dev/null || echo "No models directory"
+          MODEL_COUNT=$(find models -name "*.pt" -o -name "*.pth" -o -name "*.onnx" 2>/dev/null | wc -l)
+          echo "Found $MODEL_COUNT model files"
+          echo "model_count=$MODEL_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Upload to Model Hub
+        if: steps.models.outputs.model_count > 0
+        run: |
+          pip install huggingface_hub
+          python3 -c "import os; from huggingface_hub import HfApi, create_repo; api = HfApi(token=os.environ.get('HF_TOKEN')); org = os.environ.get('HF_ORG'); [create_repo(f'{org}/bas-{os.path.splitext(os.path.splitext(f)[0])[0]}-industrial', repo_type='model', exist_ok=True) or api.upload_folder(folder_path=os.path.join('models', d), repo_id=f'{org}/bas-{os.path.splitext(os.path.splitext(f)[0])[0]}-industrial', repo_type='model') for root, dirs, files in [('models', [], [f])] for d in os.listdir('models') if os.path.isdir(os.path.join('models', d)) for f in os.listdir(os.path.join('models', d)) if f.endswith(('.pt', '.pth', '.onnx'))]" || true
+
+      - name: No models notification
+        if: steps.models.outputs.model_count == 0
+        run: echo "No model files found to upload"
+
+  notify:
+    name: Notify
+    needs: [deploy-space, upload-model]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Success notification
+        if: needs.deploy-space.result == 'success'
+        run: echo "HuggingFace deployment completed"
+
+      - name: Failure notification
+        if: needs.deploy-space.result == 'failure'
+        run: echo "HuggingFace deployment failed"

@@ -1,0 +1,210 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enterprise-vision-ai"
+version = "2.0.0"
+description = "Endüstriyel AI - Open-source computer vision platform for industrial quality control"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Enterprise Vision AI Team", email = "contact@enterprise-vision.ai"},
+]
+keywords = [
+    "computer-vision",
+    "defect-detection",
+    "ore-classification",
+    "yolo",
+    "industrial-ai",
+    "machine-learning",
+    "streamlit",
+    "quality-control",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+
+# Dependencies
+dependencies = [
+    "streamlit>=1.28.0",
+    "ultralytics>=8.0.0",
+    "opencv-python-headless>=4.8.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "pillow>=10.0.0",
+    "plotly>=5.15.0",
+    "streamlit-webrtc>=0.47.0",
+    "av>=12.0.0",
+]
+
+# Optional dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+docs = [
+    "sphinx>=6.0.0",
+    "myst-parser>=2.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+]
+ml = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "mlflow>=2.0.0",
+    "scikit-learn>=1.3.0",
+]
+
+# Project URLs
+[project.urls]
+Homepage = "https://github.com/bas-industrial/enterprise-vision-ai"
+Documentation = "https://bas-industrial-ai.readthedocs.io"
+Repository = "https://github.com/bas-industrial/enterprise-vision-ai"
+Issues = "https://github.com/bas-industrial/enterprise-vision-ai/issues"
+Discussions = "https://github.com/bas-industrial/enterprise-vision-ai/discussions"
+
+# Entry points
+[project.scripts]
+enterprise-vision-ai = "app:main"
+
+# Tool configurations
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pages*", "utils*", "bas_ai*", "enterprise_vision_ai*"]
+exclude = ["tests*", "docs*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_gitignore = true
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app", "pages", "utils"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.pre-commit]
+default_stages = ["pre-commit"]
+repos = [
+    {
+        repo = "https://github.com/pre-commit/pre-commit-hooks",
+        rev = "v4.5.0",
+        hooks = [
+            "trailing-whitespace",
+            "end-of-file-fixer",
+            "check-yaml",
+            "check-added-large-files",
+            "check-merge-conflict",
+            "debug-statements",
+        ],
+    },
+    {
+        repo = "https://github.com/psf/black",
+        rev = "23.12.1",
+        hooks = [{id = "black"}],
+    },
+    {
+        repo = "https://github.com/pycqa/isort",
+        rev = "5.13.2",
+        hooks = [{id = "isort"}],
+    },
+    {
+        repo = "https://github.com/pycqa/flake8",
+        rev = "7.0.0",
+        hooks = [{id = "flake8"}],
+    },
+]
+
+[tool.streamlit]
+[tool.streamlit.server]
+serverPort = 8501
+serverAddress = "0.0.0.0"
+headless = true
+
+[tool.streamlit.betaMode]
+useStaticFiles = true
+
+[tool.streamlit.run]
+[tool.streamlit.run].argv = []
+
+# Project metadata for packaging
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.toml", "*.txt"]
+
+[tool.setuptools]
+[tool.setuptools.package-data]
+bas_endustriyel_ai = ["py.typed"]
