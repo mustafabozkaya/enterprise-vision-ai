@@ -139,7 +139,7 @@ def render_sidebar():
         **Tarih:** 2026
         """)
     
-    return module
+    return
 
 
 def render_homepage():
