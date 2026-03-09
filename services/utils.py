@@ -122,10 +122,25 @@ def draw_annotations(
                 
                 # Maskeyi renklendir
                 mask_uint8 = (mask * 255).astype(np.uint8)
+                
+                # Debug: Print shapes
+                # print(f"Mask shape: {mask_uint8.shape}, result_image shape: {result_image.shape}")
+                
+                # Maskeyi orijinal görüntü boyutuna yeniden boyutlandır
+                target_h, target_w = result_image.shape[:2]
+                mask_resized = cv2.resize(
+                    mask_uint8, 
+                    (target_w, target_h),
+                    interpolation=cv2.INTER_LINEAR
+                )
+                
+                # mask_resized'i 3 kanala genişlet
+                mask_resized_3ch = np.stack([mask_resized] * 3, axis=-1)
+                
                 mask_colored = np.zeros_like(result_image)
-                mask_colored[:, :, 0] = mask_uint8
-                mask_colored[:, :, 1] = mask_uint8
-                mask_colored[:, :, 2] = mask_uint8
+                mask_colored[:, :, 0] = mask_resized_3ch[:, :, 0]
+                mask_colored[:, :, 1] = mask_resized_3ch[:, :, 1]
+                mask_colored[:, :, 2] = mask_resized_3ch[:, :, 2]
                 
                 # Maskeyi görüntüye uygula
                 result_image = cv2.addWeighted(result_image, 1, mask_colored, 0.3, 0)

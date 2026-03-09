@@ -102,6 +102,17 @@ docker build -t bas-industrial-ai .
 docker run -p 8501:8501 bas-industrial-ai
 ```
 
+### Model İndirme | Download Models
+
+```bash
+# Modelleri indirin | Download models
+python models/download_models.py
+```
+
+Modeller varsayılan olarak `models/` dizinine indirilecektir.
+
+Models will be downloaded to the `models/` directory by default.
+
 ### Kullanım | Usage
 
 1. Tarayıcınızda `http://localhost:8501` adresine gidin
@@ -125,14 +136,22 @@ docker run -p 8501:8501 bas-industrial-ai
 ```
 enterprise-vision-ai/
 ├── app.py                 # Ana Streamlit uygulaması
-├── utils.py              # Yardımcı fonksiyonlar
+├── services/             # Servis katmanı
+│   └── utils.py         # Yardımcı fonksiyonlar (formerly utils.py)
 ├── pages/                # Sayfa modülleri
-│   ├── defect.py         # Defekt tespiti modülü
-│   └── ore.py            # Cevher sınıflandırma modülü
+│   ├── 01_Defekt_Tespiti.py  # Defekt tespiti sayfası
+│   ├── defect.py        # Defekt tespiti modülü
+│   ├── 02_Cevher_On_Secimi.py # Cevher sınıflandırma sayfası
+│   └── ore.py           # Cevher sınıflandırma modülü
+├── api/                 # FastAPI gateway
+├── clients/              # İstemci kütüphaneleri
 ├── models/               # ML modelleri
-├── data/                 # Veri setleri
+├── datasets/             # Veri setleri
 ├── notebooks/           # Jupyter notebooks
+├── services/             # Servis katmanı
+├── src/                  # Kaynak kod (enterprise_vision_ai paketi)
 ├── tests/                # Birim testleri
+├── huggingface_space/   # HuggingFace Space uygulaması
 ├── docker-compose.yml   # Docker Compose konfigürasyonu
 ├── Dockerfile           # Docker image tanımı
 ├── pyproject.toml       # Python proje konfigürasyonu

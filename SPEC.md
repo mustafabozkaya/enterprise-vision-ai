@@ -449,25 +449,25 @@ bas-endustriyel-ai/
 
 #### 2.0.1 - Core Infrastructure (Month 1-2)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| REST API | FastAPI-based inference API | P0 |
-| Model Registry | MLflow integration for version control | P0 |
-| Database | PostgreSQL for metadata and logs | P0 |
-| Redis Caching | Inference result caching | P1 |
-| Docker Support | Containerized deployment | P0 |
-| Kubernetes Configs | K8s manifests for production | P1 |
+| Feature | Description | Priority | Status |
+|---------|-------------|----------|--------|
+| REST API | FastAPI-based inference API | P0 | ✅ Implemented |
+| Model Registry | MLflow integration for version control | P0 | ⏳ Planned |
+| Database | PostgreSQL for metadata and logs | P0 | ⏳ Planned |
+| Redis Caching | Inference result caching | P1 | ⏳ Planned |
+| Docker Support | Containerized deployment | P0 | ✅ Implemented |
+| Kubernetes Configs | K8s manifests for production | P1 | ⏳ Planned |
 
 #### 2.0.2 - Advanced Features (Month 2-3)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| Real-time Streaming | RTSP/IP camera integration | P0 |
-| Batch Processing | Large dataset inference | P0 |
-| Multi-model Support | Switch between model versions | P1 |
-| WebSocket Support | Real-time inference updates | P1 |
-| Model Export | ONNX/TensorRT export | P1 |
-| Performance Monitoring | Latency, throughput tracking | P2 |
+| Feature | Description | Priority | Status |
+|---------|-------------|----------|--------|
+| Real-time Streaming | RTSP/IP camera integration | P0 | ✅ Implemented |
+| Batch Processing | Large dataset inference | P0 | ✅ Implemented |
+| Multi-model Support | Switch between model versions | P1 | ✅ Implemented |
+| WebSocket Support | Real-time inference updates | P1 | ⏳ Planned |
+| Model Export | ONNX/TensorRT export | P1 | ⏳ Planned |
+| Performance Monitoring | Latency, throughput tracking | P2 | ⏳ Planned |
 
 #### 2.0.3 - Enterprise Features (Month 3-4)
 

@@ -13,7 +13,7 @@ import tempfile
 # Import utility functions
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import (
+from services.utils import (
     draw_annotations,
     get_ore_class_colors,
     calculate_ore_metrics,
@@ -34,13 +34,32 @@ def load_model():
     YOLO modelini yükler.
     Model yoksa fallback döner.
     """
+    import os
+    
+    # Debug: List available files
+    print("=" * 50)
+    print("DEBUG: Ore Model Loading Started")
+    print(f"Current directory: {os.getcwd()}")
+    
     try:
         from ultralytics import YOLO
         
         # Model yükle
-        try:
-            model = YOLO('yolo11s-seg.pt')
-        except:
+        model_paths = ['yolo11s-seg.pt', 'yolo11n-seg.pt']
+        model = None
+        
+        for model_path in model_paths:
+            try:
+                print(f"Trying to load: {model_path}")
+                if os.path.exists(model_path):
+                    model = YOLO(model_path)
+                    print(f"SUCCESS: Loaded {model_path}")
+                    break
+            except Exception as e:
+                print(f"Error loading {model_path}: {e}")
+        
+        if model is None:
+            print("Using pretrained yolo11n-seg.pt as fallback")
             model = YOLO('yolo11n-seg.pt')
         
         # Sınıf isimlerini ayarla (demo için)
@@ -51,8 +70,10 @@ def load_model():
             3: 'düşük tenör'
         }
         
+        print("DEBUG: Ore model loaded successfully")
         return model, True
     except Exception as e:
+        print(f"DEBUG: Ore model loading failed: {e}")
         st.warning(f"Model yüklenirken hata: {e}")
         return None, False
 

@@ -14,7 +14,7 @@ import time
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import (
+from services.utils import (
     draw_annotations,
     calculate_anomaly_score,
     get_severity_level,
@@ -35,20 +35,42 @@ def load_model():
     YOLO modelini yükler.
     Model yoksa dummy mod döner.
     """
+    import os
+    
+    # Debug: List available files in current directory
+    print("=" * 50)
+    print("DEBUG: Model Loading Started")
+    print(f"Current directory: {os.getcwd()}")
+    print(f"Files in directory: {os.listdir('.')}")
+    
     try:
         from ultralytics import YOLO
         
         # Model yükle (fallback to yolo11n if custom model not found)
-        try:
-            model = YOLO('yolo26-seg.pt')
-        except:
-            try:
-                model = YOLO('yolo11s-seg.pt')
-            except:
-                model = YOLO('yolo11n-seg.pt')
+        model_paths = ['yolo26-seg.pt', 'yolo11s-seg.pt', 'yolo11n-seg.pt']
+        model = None
         
+        for model_path in model_paths:
+            try:
+                print(f"Trying to load: {model_path}")
+                if os.path.exists(model_path):
+                    model = YOLO(model_path)
+                    print(f"SUCCESS: Loaded {model_path}")
+                    break
+                else:
+                    print(f"Model file not found: {model_path}")
+            except Exception as e:
+                print(f"Error loading {model_path}: {e}")
+        
+        if model is None:
+            # Use pretrained model as last resort
+            print("Using pretrained yolo11n-seg.pt as fallback")
+            model = YOLO('yolo11n-seg.pt')
+        
+        print("DEBUG: Model loaded successfully")
         return model, True
     except Exception as e:
+        print(f"DEBUG: Model loading failed: {e}")
         st.warning(f"Model yüklenirken hata: {e}")
         return None, False
 
