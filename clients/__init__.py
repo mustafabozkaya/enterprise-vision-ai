@@ -7,16 +7,16 @@ Bu paket şunları içerir:
 - huggingface_client: HuggingFace modelleri (SAM, DETR, YOLOS)
 """
 
-from clients import yolo_client, huggingface_client
+from clients import huggingface_client, yolo_client
 
 # Yeni HuggingFace Vision sınıflarını export et
 from clients.huggingface_client import (
+    DetectionModel,
     HuggingFaceClient,
     HuggingFaceInferenceClient,
     HuggingFaceSpacesClient,
     HuggingFaceVisionClient,
     SAMModel,
-    DetectionModel,
     VisionResult,
 )
 

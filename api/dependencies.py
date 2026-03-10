@@ -3,15 +3,16 @@ API Dependencies - FastAPI Bağımlılıkları
 Model yükleme, authentication ve rate limiting için bağımlılıklar
 """
 
-from typing import Optional, Dict, Any
 from functools import lru_cache
-from fastapi import Depends, HTTPException, status, Header
+from typing import Any, Dict, Optional
+
+from fastapi import Depends, Header, HTTPException, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from clients.yolo_client import YOLOModelManager
 from services.inference_service import InferenceService
 from services.model_service import ModelService
-from clients.yolo_client import YOLOModelManager
 
 # =============================================================================
 # Singleton Instances

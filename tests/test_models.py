@@ -3,6 +3,7 @@ Tests for enterprise_vision_ai models package.
 """
 
 import pytest
+
 from enterprise_vision_ai.models.model_manager import ModelManager, load_model
 
 

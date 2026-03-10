@@ -3,6 +3,7 @@ Tests for enterprise_vision_ai datasets package.
 """
 
 import pytest
+
 from enterprise_vision_ai.datasets.data_loader import (
     DefectDetectionDataset,
     OreClassificationDataset,

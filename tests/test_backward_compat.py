@@ -10,7 +10,7 @@ class TestEnterpriseVisionAI:
 
     def test_import_from_enterprise_vision_ai(self):
         """Test that imports from enterprise_vision_ai work."""
-        from enterprise_vision_ai import load_model, load_dataset
+        from enterprise_vision_ai import load_dataset, load_model
 
         assert callable(load_model)
         assert callable(load_dataset)

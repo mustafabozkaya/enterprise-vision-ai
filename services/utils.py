@@ -3,10 +3,11 @@ Enterprise Vision AI MVP - Ortak Fonksiyonlar
 Defekt Tespiti ve Cevher Ön Seçimi için yardımcı fonksiyonlar
 """
 
+from typing import Dict, List, Optional, Tuple
+
+import cv2
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-import cv2
 from PIL import Image
 
 # =============================================================================

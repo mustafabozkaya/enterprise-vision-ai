@@ -8,21 +8,21 @@ Bu modül HuggingFace vision modelleri için kapsamlı destek sağlar:
 - Maske üretimi ve işleme
 """
 
-import os
 import base64
 import io
+import os
 import time
-from typing import Dict, List, Optional, Any, Union, Tuple
 from dataclasses import dataclass
+
+# Lazy imports için TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 from PIL import Image
 
-# Lazy imports için TypeVar
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-    import torch
     import cv2
+    import torch
 
 
 @dataclass
@@ -91,7 +91,7 @@ class SAMModel:
         """Gerekli modülleri lazy olarak import eder."""
         try:
             import torch
-            from transformers import SamProcessor, SamModel
+            from transformers import SamModel, SamProcessor
 
             return torch, SamProcessor, SamModel
         except ImportError as e:

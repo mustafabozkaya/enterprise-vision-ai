@@ -3,25 +3,26 @@ Enterprise Vision AI MVP - Defekt Tespiti Modülü
 Yüzey kusurlarının tespiti ve analizi
 """
 
-import streamlit as st
-import numpy as np
-import cv2
-from PIL import Image
-from datetime import datetime
-import time
+import os
 
 # Import utility functions
 import sys
-import os
+import time
+from datetime import datetime
+
+import cv2
+import numpy as np
+import streamlit as st
+from PIL import Image
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.utils import (
-    draw_annotations,
     calculate_anomaly_score,
-    get_severity_level,
-    get_maintenance_recommendation,
-    get_defect_colors,
     create_metrics_dataframe,
+    draw_annotations,
+    get_defect_colors,
+    get_maintenance_recommendation,
+    get_severity_level,
     resize_image,
 )
 

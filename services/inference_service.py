@@ -10,21 +10,22 @@ Bu servis hem YOLO hem de HuggingFace modellerini destekler:
 import base64
 import io
 import time
-from typing import Dict, List, Optional, Any, Union
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 from PIL import Image
 
-from clients.yolo_client import YOLOModelManager
+from api.schemas.response import BoundingBox, DetectionResult, ImageInfo, Metrics
 from clients.huggingface_client import HuggingFaceVisionClient
-from api.schemas.response import DetectionResult, BoundingBox, ImageInfo, Metrics
+from clients.yolo_client import YOLOModelManager
 from services.utils import (
+    calculate_anomaly_score,
+    calculate_metal_ratio,
+    calculate_ore_metrics,
     get_defect_colors,
     get_ore_class_colors,
     get_severity_level,
-    calculate_anomaly_score,
-    calculate_ore_metrics,
-    calculate_metal_ratio,
 )
 
 

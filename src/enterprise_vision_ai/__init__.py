@@ -21,13 +21,14 @@ Example usage:
 __version__ = "2.0.0"
 __author__ = "Enterprise Vision AI Team"
 
-# Import main components for easy access
-from enterprise_vision_ai.models.model_manager import ModelManager, load_model
 from enterprise_vision_ai.datasets.data_loader import (
     DefectDetectionDataset,
     OreClassificationDataset,
     load_dataset,
 )
+
+# Import main components for easy access
+from enterprise_vision_ai.models.model_manager import ModelManager, load_model
 
 __all__ = [
     # Version

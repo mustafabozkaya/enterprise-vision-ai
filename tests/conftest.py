@@ -2,8 +2,8 @@
 Pytest configuration and fixtures for Enterprise Vision AI tests.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add src to path for imports

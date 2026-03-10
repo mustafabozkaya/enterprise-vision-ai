@@ -11,12 +11,13 @@ License: Apache 2.0
 """
 
 import os
-import gradio as gr
-import numpy as np
-import cv2
-from PIL import Image
 from datetime import datetime
 from functools import lru_cache
+
+import cv2
+import gradio as gr
+import numpy as np
+from PIL import Image
 
 # Check for torch availability
 try:
