@@ -13,9 +13,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to HuggingFace Space
-        uses: amDDD/git2hfs@latest
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          args: huggingface_space mustafabozkaya/enterprise-vision-ai
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install huggingface_hub
+
+      - name: Deploy to HuggingFace Space
+        run: |
+          python -c "
+          from huggingface_hub import HfApi, create_space
+          import os
+          
+          token = os.environ.get('HF_TOKEN')
+          api = HfApi(token=token)
+          
+          # Upload the huggingface_space folder to the Space
+          api.upload_folder(
+              folder_path='huggingface_space',
+              repo_id='mustafabozkaya/enterprise-vision-ai',
+              repo_type='space',
+              commit_message='Deploy from GitHub Actions'
+          )
+          print('Successfully deployed to HuggingFace Space!')
+          "
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
