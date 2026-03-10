@@ -159,52 +159,39 @@ directory = "htmlcov"
 
 [tool.pre-commit]
 default_stages = ["pre-commit"]
-repos = [
-    {
-        repo = "https://github.com/pre-commit/pre-commit-hooks",
-        rev = "v4.5.0",
-        hooks = [
-            "trailing-whitespace",
-            "end-of-file-fixer",
-            "check-yaml",
-            "check-added-large-files",
-            "check-merge-conflict",
-            "debug-statements",
-        ],
-    },
-    {
-        repo = "https://github.com/psf/black",
-        rev = "23.12.1",
-        hooks = [{id = "black"}],
-    },
-    {
-        repo = "https://github.com/pycqa/isort",
-        rev = "5.13.2",
-        hooks = [{id = "isort"}],
-    },
-    {
-        repo = "https://github.com/pycqa/flake8",
-        rev = "7.0.0",
-        hooks = [{id = "flake8"}],
-    },
+
+[[tool.pre-commit.repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v4.5.0"
+hooks = [
+    "trailing-whitespace",
+    "end-of-file-fixer",
+    "check-yaml",
+    "check-added-large-files",
+    "check-merge-conflict",
+    "debug-statements",
 ]
 
+[[tool.pre-commit.repos]]
+repo = "https://github.com/psf/black"
+rev = "23.12.1"
+hooks = [{id = "black"}]
+
+[[tool.pre-commit.repos]]
+repo = "https://github.com/pycqa/isort"
+rev = "5.13.2"
+hooks = [{id = "isort"}]
+
+[[tool.pre-commit.repos]]
+repo = "https://github.com/pycqa/flake8"
+rev = "7.0.0"
+hooks = [{id = "flake8"}]
+
 [tool.streamlit]
-[tool.streamlit.server]
-serverPort = 8501
-serverAddress = "0.0.0.0"
-headless = true
-
-[tool.streamlit.betaMode]
-useStaticFiles = true
-
-[tool.streamlit.run]
-[tool.streamlit.run].argv = []
+server.port = 8501
+server.address = "0.0.0.0"
+server.headless = true
 
 # Project metadata for packaging
-[tool.setuptools.package-data]
-"*" = ["*.yaml", "*.yml", "*.toml", "*.txt"]
-
 [tool.setuptools]
-[tool.setuptools.package-data]
-bas_endustriyel_ai = ["py.typed"]
+package-data = {"*" = ["*.yaml", "*.yml", "*.toml", "*.txt"], "bas_endustriyel_ai" = ["py.typed"]}
