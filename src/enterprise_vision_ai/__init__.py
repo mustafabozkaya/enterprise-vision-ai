@@ -10,10 +10,10 @@ Subpackages:
 
 Example usage:
     from enterprise_vision_ai import load_model, load_dataset
-    
+
     # Load a defect detection model
     model = load_model("yolov8n-defect")
-    
+
     # Load a dataset
     dataset = load_dataset("defect_detection", split="train")
 """
@@ -26,7 +26,7 @@ from enterprise_vision_ai.models.model_manager import ModelManager, load_model
 from enterprise_vision_ai.datasets.data_loader import (
     DefectDetectionDataset,
     OreClassificationDataset,
-    load_dataset
+    load_dataset,
 )
 
 __all__ = [

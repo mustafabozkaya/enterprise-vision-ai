@@ -16,7 +16,6 @@ from slowapi.errors import RateLimitExceeded
 from api.routes import inference, upload
 from api.schemas.response import HealthResponse
 
-
 # Rate limiter yapılandırması
 limiter = Limiter(key_func=get_remote_address)
 
@@ -30,19 +29,20 @@ async def lifespan(app: FastAPI):
     # Başlangıç: Model yükleme, bağlantı kurma vb.
     print("API Gateway starting...")
     start_time = time.time()
-    
+
     yield
-    
+
     # Kapatma: Kaynakları temizle
     print("API Gateway shutting down...")
     from clients.yolo_client import yolo_model_manager
+
     yolo_model_manager.unload_all_models()
 
 
 def create_application() -> FastAPI:
     """
     FastAPI uygulaması oluşturur.
-    
+
     Returns:
         FastAPI: Yapılandırılmış FastAPI uygulaması
     """
@@ -53,9 +53,9 @@ def create_application() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
-    
+
     # CORS Middleware
     app.add_middleware(
         CORSMiddleware,
@@ -64,13 +64,13 @@ def create_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # GZip Sıkıştırma
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-    
+
     # Rate Limiting
     app.state.limiter = limiter
-    
+
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         return JSONResponse(
@@ -78,22 +78,14 @@ def create_application() -> FastAPI:
             content={
                 "error": "Rate limit exceeded",
                 "detail": "Çok fazla istek gönderildi. Lütfen daha sonra tekrar deneyin.",
-                "retry_after": exc.detail
-            }
+                "retry_after": exc.detail,
+            },
         )
-    
+
     # Router'ları ekle
-    app.include_router(
-        inference.router,
-        prefix="/api/v1",
-        tags=["Inference"]
-    )
-    app.include_router(
-        upload.router,
-        prefix="/api/v1",
-        tags=["Upload"]
-    )
-    
+    app.include_router(inference.router, prefix="/api/v1", tags=["Inference"])
+    app.include_router(upload.router, prefix="/api/v1", tags=["Upload"])
+
     return app
 
 
@@ -109,7 +101,7 @@ async def root():
         "name": "Enterprise Vision AI API",
         "version": "1.0.0",
         "docs": "/docs",
-        "redoc": "/redoc"
+        "redoc": "/redoc",
     }
 
 
@@ -121,15 +113,15 @@ async def health_check(request: Request):
     API'nin çalışır durumda olduğunu kontrol eder.
     """
     from clients.yolo_client import yolo_model_manager
-    
+
     # Model durumlarını kontrol et
     model_status = yolo_model_manager.get_loaded_models()
-    
+
     return HealthResponse(
         status="healthy",
         version="1.0.0",
         models_loaded=list(model_status.keys()) if model_status else [],
-        models_count=len(model_status)
+        models_count=len(model_status),
     )
 
 
@@ -144,11 +136,8 @@ async def api_root():
             "inference": {
                 "defect_detection": "/api/v1/detect/defects",
                 "ore_classification": "/api/v1/classify/ore",
-                "list_models": "/api/v1/models"
+                "list_models": "/api/v1/models",
             },
-            "upload": {
-                "image": "/api/v1/upload/image",
-                "batch": "/api/v1/upload/batch"
-            }
-        }
+            "upload": {"image": "/api/v1/upload/image", "batch": "/api/v1/upload/batch"},
+        },
     }

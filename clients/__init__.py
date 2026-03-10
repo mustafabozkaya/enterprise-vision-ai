@@ -17,11 +17,11 @@ from clients.huggingface_client import (
     HuggingFaceVisionClient,
     SAMModel,
     DetectionModel,
-    VisionResult
+    VisionResult,
 )
 
 __all__ = [
-    "yolo_client", 
+    "yolo_client",
     "huggingface_client",
     "HuggingFaceClient",
     "HuggingFaceInferenceClient",
@@ -29,5 +29,5 @@ __all__ = [
     "HuggingFaceVisionClient",
     "SAMModel",
     "DetectionModel",
-    "VisionResult"
+    "VisionResult",
 ]

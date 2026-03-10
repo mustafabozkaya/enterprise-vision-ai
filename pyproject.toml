@@ -87,7 +87,7 @@ enterprise-vision-ai = "app:main"
 # Tool configurations
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["pages*", "utils*", "bas_ai*", "enterprise_vision_ai*"]
+include = ["pages*", "utils*", "services*", "clients*", "api*", "bas_ai*", "enterprise_vision_ai*"]
 exclude = ["tests*", "docs*"]
 
 [tool.black]
@@ -136,7 +136,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["app", "pages", "utils"]
+source = ["app", "pages", "services", "clients", "api"]
 omit = [
     "*/tests/*",
     "*/test_*.py",

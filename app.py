@@ -15,17 +15,19 @@ from pathlib import Path
 # CACHED HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
 
+
 @st.cache_data(ttl=30)
 def check_api_health():
     """
     FastAPI server sağlık durumunu kontrol eder.
     30 saniye boyunca cache'lenir.
-    
+
     Returns:
         tuple: (status_text, status_color)
     """
     try:
         import requests
+
         response = requests.get("http://localhost:8000/health", timeout=2)
         if response.status_code == 200:
             return ("🟢 Aktif", "#3fb950")
@@ -43,7 +45,7 @@ st.set_page_config(
     page_title="Enterprise Vision AI MVP",
     page_icon="🏭",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 
@@ -51,7 +53,8 @@ st.set_page_config(
 # CUSTOM CSS - Hide default Streamlit navigation
 # -----------------------------------------------------------------------------
 
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Ana tema renkleri */
     .stApp {
@@ -252,19 +255,23 @@ st.markdown("""
         font-weight: 600;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # -----------------------------------------------------------------------------
 # SIDEBAR RENDER - Professional Navigation
 # -----------------------------------------------------------------------------
 
+
 def render_sidebar():
     """Modern enterprise-style sidebar with professional navigation."""
-    
+
     with st.sidebar:
         # Logo ve başlık
-        st.markdown("""
+        st.markdown(
+            """
         <div class="sidebar-header">
             <span style="font-size: 28px;">🏭</span>
             <div>
@@ -272,31 +279,39 @@ def render_sidebar():
                 <span class="version-badge">v1.0.0</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Ana sayfa linki
         st.markdown('<div class="sidebar-section-title">Sayfalar</div>', unsafe_allow_html=True)
-        
+
         # Navigation using Streamlit's native page_link
-        st.markdown("""
+        st.markdown(
+            """
         <a href="./" class="nav-link" style="background-color: #1f6feb; color: #ffffff;">
             <span class="nav-icon">🏠</span>
             <span>Ana Sayfa</span>
         </a>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         st.page_link("pages/01_Defekt_Tespiti.py", label="🔍 Defekt Tespiti")
         st.page_link("pages/02_Cevher_On_Secimi.py", label="💎 Cevher Ön Seçimi")
-        
+
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        
+
         # API Durumu
-        st.markdown('<div class="sidebar-section-title">Sistem Durumu</div>', unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div class="sidebar-section-title">Sistem Durumu</div>', unsafe_allow_html=True
+        )
+
         # API server durumu (cached)
         api_status, api_color = check_api_health()
-        
-        st.markdown(f"""
+
+        st.markdown(
+            f"""
         <div class="model-status-card">
             <div class="title">FastAPI Server</div>
             <div class="status" style="color: {api_color};">
@@ -304,10 +319,13 @@ def render_sidebar():
                 {api_status}
             </div>
         </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Model durumu
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="model-status-card">
             <div class="title">YOLO11 Segmentation</div>
             <div class="status" style="color: #3fb950;">
@@ -315,13 +333,15 @@ def render_sidebar():
                 Hazır
             </div>
         </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        
+
         # Hakkında
         st.markdown('<div class="sidebar-section-title">Bilgi</div>', unsafe_allow_html=True)
-        
+
         with st.expander("ℹ️ Uygulama Hakkında"):
             st.markdown("""
             **Enterprise Vision AI**
@@ -332,7 +352,7 @@ def render_sidebar():
             - **Tarih:** 2026
             - **Framework:** Streamlit + FastAPI
             """)
-        
+
         with st.expander("🔌 API Dokümantasyonu"):
             st.markdown("""
             **FastAPI Endpoints:**
@@ -348,16 +368,16 @@ def render_sidebar():
 
 def render_homepage():
     """Ana sayfa içeriğini oluşturur."""
-    
+
     # Hoş geldin başlığı
     st.title("🏭 Enterprise Vision AI MVP")
     st.markdown("### Yapay Zeka Destekli Kalite Kontrol Sistemi")
-    
+
     st.markdown("---")
-    
+
     # İstatistik kartları
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric(label="Aktif Modüller", value="2")
     with col2:
@@ -366,16 +386,17 @@ def render_homepage():
         st.metric(label="İşlem Hızı", value="30 FPS")
     with col4:
         st.metric(label="Desteklenen Sınıf", value="9+")
-    
+
     st.markdown("---")
-    
+
     # Modül açıklamaları
     st.subheader("📦 Mevcut Modüller")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="card">
             <h3>🔍 Defekt Tespiti</h3>
             <p>Endüstriyel ürünlerdeki yüzey kusurlarını 
@@ -388,10 +409,13 @@ def render_homepage():
             </ul>
             <p><strong>Model:</strong> YOLO11 Seg</p>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="card">
             <h3>💎 Cevher Ön Seçimi</h3>
             <p>Maden cevherlerini sınıflandıran ve 
@@ -404,13 +428,15 @@ def render_homepage():
             </ul>
             <p><strong>Model:</strong> YOLO11 Seg</p>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     st.markdown("---")
-    
+
     # Kullanım talimatları
     st.subheader("📖 Kullanım Talimatları")
-    
+
     with st.expander("Defekt Tespiti Nasıl Kullanılır?"):
         st.markdown("""
         1. Sol menüden **Defekt Tespiti** modülünü seçin
@@ -419,7 +445,7 @@ def render_homepage():
         4. Sonuçları görüntüleyin ve analiz edin
         5. Anomali skoruna göre bakım önerilerini takip edin
         """)
-    
+
     with st.expander("Cevher Ön Seçimi Nasıl Kullanılır?"):
         st.markdown("""
         1. Sol menüden **Cevher Ön Seçimi** modülünü seçin
@@ -428,28 +454,32 @@ def render_homepage():
         4. Sınıflandırma sonuçlarını inceleyin
         5. Metal oranına göre diverter önerisini takip edin
         """)
-    
+
     st.markdown("---")
-    
+
     # Footer
-    st.markdown("""
+    st.markdown(
+        """
     <div style="text-align: center; color: #666; padding: 20px;">
         <p>Enterprise Vision AI MVP © 2026</p>
         <p>Tüm hakları saklıdır.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 # -----------------------------------------------------------------------------
 # MAIN FONKSİYON
 # -----------------------------------------------------------------------------
 
+
 def main():
     """Ana uygulama fonksiyonu."""
-    
+
     # Sidebar'ı render et
     render_sidebar()
-    
+
     # Ana sayfayı render et
     render_homepage()
 
