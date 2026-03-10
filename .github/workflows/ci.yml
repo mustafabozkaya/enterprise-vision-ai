@@ -150,11 +150,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Bandit security scan
-        uses: pybandit/bandit-action@main
-        with:
-          level: medium
-          recursive: '.'
-          exclude: 'tests,.git,venv,build,dist'
+        run: |
+          pip install bandit
+          bandit -r . -x tests --exclude tests,.git,venv,build,dist
 
       - name: Check for vulnerabilities with pip-audit
         run: |
