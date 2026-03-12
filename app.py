@@ -7,9 +7,6 @@ Bu uygulama iki ana modül içerir:
 2. Cevher Ön Seçimi - Cevher sınıflandırma ve ayrıştırma
 """
 
-import time
-from pathlib import Path
-
 import streamlit as st
 
 # -----------------------------------------------------------------------------
@@ -34,7 +31,7 @@ def check_api_health():
             return ("🟢 Aktif", "#3fb950")
         else:
             return ("🟡 Uyarı", "#d29922")
-    except:
+    except Exception:
         return ("🔴 Bağlantı Yok", "#f85149")
 
 
@@ -326,7 +323,7 @@ def render_sidebar():
 
         # Model durumu
         st.markdown(
-            f"""
+            """
         <div class="model-status-card">
             <div class="title">YOLO11 Segmentation</div>
             <div class="status" style="color: #3fb950;">

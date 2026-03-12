@@ -1,0 +1,35 @@
+[flake8]
+max-line-length = 100
+extend-ignore =
+    E203,
+    W503,
+    W291,
+    W293,
+    E402
+
+per-file-ignores =
+    # Test files: unused imports (pytest, fixtures)
+    tests/*.py: F401, F811
+    # HuggingFace client: intentional conditional torch imports, complex ML code
+    src/enterprise_vision_ai/clients/huggingface_client.py: F811, E741, F401, E722
+    # Streamlit pages: complex UI code
+    pages/*.py: F841, E501, F401
+    huggingface_space/app.py: F841, E501, F401, F541
+    # Download script
+    models/download_models.py: F401, E501, F541, F841
+    # API scaffold stubs — imports defined for future implementation
+    src/enterprise_vision_ai/api/routes/*.py: F401, F841, E501
+    src/enterprise_vision_ai/api/dependencies.py: F401
+    src/enterprise_vision_ai/api/main.py: F841
+    src/enterprise_vision_ai/api/schemas/*.py: F401
+    src/enterprise_vision_ai/core/*.py: F401
+    src/enterprise_vision_ai/utils/*.py: F401
+
+exclude =
+    .git,
+    __pycache__,
+    venv,
+    .venv,
+    build,
+    dist,
+    *.egg-info
