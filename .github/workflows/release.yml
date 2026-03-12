@@ -94,14 +94,18 @@ jobs:
 
       - name: Generate release notes
         id: notes
+        shell: python
         run: |
-          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD 2>/dev/null || HEAD^)..HEAD --no-merges > release_notes.md || echo "- Minor updates and bug fixes" > release_notes.md
-          cat release_notes.md
-          {
-            echo "release_notes<<RELEASE_NOTES_DELIMITER"
-            cat release_notes.md
-            echo "RELEASE_NOTES_DELIMITER"
-          } >> $GITHUB_OUTPUT
+          import os, subprocess
+          result = subprocess.run(
+              ['git', 'log', '--pretty=format:- %s (%h)', '--no-merges'],
+              capture_output=True, text=True
+          )
+          notes = result.stdout.strip() or '- Minor updates and bug fixes'
+          print(notes)
+          delimiter = 'RELEASE_NOTES_7f3k2p9x'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', newline='\n') as f:
+              f.write(f'release_notes<<{delimiter}\n{notes}\n{delimiter}\n')
 
       - name: Commit version bump
         uses: stefanzweifel/git-auto-commit-action@v5
