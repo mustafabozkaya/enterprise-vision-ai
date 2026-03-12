@@ -111,6 +111,9 @@ jobs:
 
       - name: Create GitHub tag
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git pull --rebase origin main
           git tag -a v${{ steps.version.outputs.new_version }} -m "Release v${{ steps.version.outputs.new_version }}"
           git push origin v${{ steps.version.outputs.new_version }}
 
