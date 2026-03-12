@@ -138,19 +138,21 @@ def render_sidebar(active_page: str = ""):
         # Navigation
         st.markdown('<div class="sidebar-section-title">Sayfalar</div>', unsafe_allow_html=True)
 
-        home_style = "background-color: #1f6feb; color: #ffffff;" if active_page == "" else ""
+        def _nav(href: str, icon: str, label: str, is_active: bool) -> str:
+            style = "background-color: #1f6feb; color: #ffffff;" if is_active else ""
+            return (
+                f'<a href="{href}" class="nav-link" style="{style}">'
+                f'<span class="nav-icon">{icon}</span>'
+                f"<span>{label}</span>"
+                f"</a>"
+            )
+
         st.markdown(
-            f"""
-        <a href="/" class="nav-link" style="{home_style}">
-            <span class="nav-icon">🏠</span>
-            <span>Ana Sayfa</span>
-        </a>
-        """,
+            _nav("/", "🏠", "Ana Sayfa", active_page == "")
+            + _nav("Defekt_Tespiti", "🔍", "Defekt Tespiti", active_page == "defect")
+            + _nav("Cevher_On_Secimi", "💎", "Cevher Ön Seçimi", active_page == "ore"),
             unsafe_allow_html=True,
         )
-
-        st.page_link("pages/01_Defekt_Tespiti.py", label="🔍 Defekt Tespiti")
-        st.page_link("pages/02_Cevher_On_Secimi.py", label="💎 Cevher Ön Seçimi")
 
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 

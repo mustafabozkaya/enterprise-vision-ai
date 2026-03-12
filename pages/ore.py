@@ -246,20 +246,38 @@ def render():
         show_boxes = st.checkbox("Bounding Box'ları Göster", value=True)
 
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### 📊 Model Durumu")
-        if model_loaded:
-            st.success("✅ Model Yüklü")
-        else:
-            st.warning("⚠️ Demo Mod")
+        st.markdown('<div class="sidebar-section-title">Model Durumu</div>', unsafe_allow_html=True)
+
+        model_status = "Yüklü" if model_loaded else "Demo Mod"
+        model_color = "#3fb950" if model_loaded else "#d29922"
+        st.markdown(
+            f"""
+        <div class="model-status-card">
+            <div class="title">Cevher Sınıflandırma Modeli</div>
+            <div class="status" style="color: {model_color};">
+                <span class="status-dot" style="background-color: {model_color};"></span>
+                {model_status}
+            </div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### 📋 Sınıflar")
-        st.markdown("""
-        - 🔴 Manyetit (Demir cevheri)
-        - 🟢 Krom (Krom cevheri)
-        - ⚫ Atık (Waste)
-        - 🟠 Düşük Tenör (Low grade)
-        """)
+        st.markdown('<div class="sidebar-section-title">Sınıflar</div>', unsafe_allow_html=True)
+        st.markdown(
+            """
+        <div class="model-status-card">
+            <div style="font-size:13px; color:#c9d1d9; line-height:1.8;">
+                🔴 Manyetit (Demir cevheri)<br>
+                🟢 Krom (Krom cevheri)<br>
+                ⚫ Atık (Waste)<br>
+                🟠 Düşük Tenör (Low grade)
+            </div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 
     # Ana içerik
     col1, col2 = st.columns([2, 1])
