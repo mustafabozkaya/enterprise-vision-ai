@@ -16,6 +16,7 @@ import streamlit as st
 from PIL import Image
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pages._sidebar import render_sidebar
 from services.utils import (
     calculate_anomaly_score,
     create_metrics_dataframe,
@@ -113,6 +114,11 @@ def render():
         .severity-low { color: #00ff00; }
         .severity-medium { color: #ffa500; }
         .severity-high { color: #ff0000; }
+        .sidebar-divider { height: 1px; background-color: #30363d; margin: 16px 0; }
+        .sidebar-section-title {
+            font-size: 12px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: #8b949e; margin: 20px 0 10px 0; padding: 0 12px;
+        }
     </style>
     """,
         unsafe_allow_html=True,
@@ -124,16 +130,19 @@ def render():
 
     st.markdown("---")
 
-    # Sidebar - Ayarlar
+    # Shared sidebar (branding + navigation + system status)
+    render_sidebar(active_page="defect")
+
+    # Page-specific sidebar controls
     with st.sidebar:
-        st.header("⚙️ Ayarlar")
+        st.markdown('<div class="sidebar-section-title">Ayarlar</div>', unsafe_allow_html=True)
 
         confidence = st.slider("Güven Eşiği", min_value=0.1, max_value=1.0, value=0.25, step=0.05)
 
         show_masks = st.checkbox("Maskeleri Göster", value=True)
         show_boxes = st.checkbox("Bounding Box'ları Göster", value=True)
 
-        st.markdown("---")
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
         st.markdown("### 📊 Model Durumu")
         if model_loaded:
             st.success("✅ Model Yüklü")
