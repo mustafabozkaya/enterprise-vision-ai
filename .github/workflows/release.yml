@@ -198,6 +198,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     needs: [bump-version, build-publish-pypi, build-publish-docker]
+    if: ${{ always() && needs.bump-version.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
