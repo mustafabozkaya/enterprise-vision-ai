@@ -98,9 +98,9 @@ jobs:
           git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD 2>/dev/null || HEAD^)..HEAD --no-merges > release_notes.md || echo "- Minor updates and bug fixes" > release_notes.md
           cat release_notes.md
           {
-            echo "release_notes<<EOF"
+            echo "release_notes<<RELEASE_NOTES_DELIMITER"
             cat release_notes.md
-            echo "EOF"
+            echo "RELEASE_NOTES_DELIMITER"
           } >> $GITHUB_OUTPUT
 
       - name: Commit version bump
