@@ -7,7 +7,31 @@ Bu uygulama iki ana modül içerir:
 2. Cevher Ön Seçimi - Cevher sınıflandırma ve ayrıştırma
 """
 
+import os
+
 import streamlit as st
+
+# FastAPI URL — env değişkeninden oku, yoksa 8000 ve 8001'i dene
+_API_BASE = os.environ.get("API_URL", "").rstrip("/")
+
+
+def _detect_api_url() -> str:
+    """8000 ve 8001 portlarını sırayla dener, ilk çalışanı döner."""
+    import requests
+
+    for port in (8000, 8001):
+        try:
+            r = requests.get(f"http://localhost:{port}/health", timeout=1)
+            if r.status_code == 200:
+                return f"http://localhost:{port}"
+        except Exception:
+            pass
+    return "http://localhost:8000"
+
+
+def get_api_url() -> str:
+    return _API_BASE if _API_BASE else _detect_api_url()
+
 
 # -----------------------------------------------------------------------------
 # CACHED HELPER FUNCTIONS
@@ -21,18 +45,19 @@ def check_api_health():
     30 saniye boyunca cache'lenir.
 
     Returns:
-        tuple: (status_text, status_color)
+        tuple: (status_text, status_color, url)
     """
     try:
         import requests
 
-        response = requests.get("http://localhost:8000/health", timeout=2)
+        url = get_api_url()
+        response = requests.get(f"{url}/health", timeout=2)
         if response.status_code == 200:
-            return ("🟢 Aktif", "#3fb950")
+            return ("🟢 Aktif", "#3fb950", url)
         else:
-            return ("🟡 Uyarı", "#d29922")
+            return ("🟡 Uyarı", "#d29922", url)
     except Exception:
-        return ("🔴 Bağlantı Yok", "#f85149")
+        return ("🔴 Bağlantı Yok", "#f85149", "")
 
 
 # -----------------------------------------------------------------------------
@@ -306,7 +331,8 @@ def render_sidebar():
         )
 
         # API server durumu (cached)
-        api_status, api_color = check_api_health()
+        api_status, api_color, api_url = check_api_health()
+        api_url_display = api_url if api_url else "—"
 
         st.markdown(
             f"""
@@ -316,6 +342,7 @@ def render_sidebar():
                 <span class="status-dot" style="background-color: {api_color};"></span>
                 {api_status}
             </div>
+            <div style="font-size:11px; color:#8b949e; margin-top:4px;">{api_url_display}</div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -352,15 +379,17 @@ def render_sidebar():
             """)
 
         with st.expander("🔌 API Dokümantasyonu"):
-            st.markdown("""
+            _, _, _url = check_api_health()
+            docs_url = f"{_url}/docs" if _url else "http://localhost:8000/docs"
+            st.markdown(f"""
             **FastAPI Endpoints:**
-            
+
             - `GET /health` - Sağlık kontrolü
-            - `GET /api/v1/models` - Model listesi  
-            - `POST /api/v1/detect/defects` - Defekt tespiti
-            - `POST /api/v1/classify/ore` - Cevher sınıflandırması
-            
-            **API Dokümantasyonu:** `/docs`
+            - `GET /api/v1/models` - Model listesi
+            - `POST /api/v1/detect/defects/file` - Defekt tespiti
+            - `POST /api/v1/classify/ore/file` - Cevher sınıflandırması
+
+            **Swagger UI:** [{docs_url}]({docs_url})
             """)
 
 
