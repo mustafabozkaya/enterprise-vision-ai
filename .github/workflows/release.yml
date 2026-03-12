@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.version.outputs.new_version }}
-      release_notes: ${{ steps.version.outputs.release_notes }}
+      release_notes: ${{ steps.notes.outputs.release_notes }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -83,7 +83,8 @@ jobs:
               new = f"{v.major}.{v.minor}.{v.micro + 1}"
 
           print(f"New version: {new}")
-          print(f"new_version={new}" >> os.environ['GITHUB_OUTPUT'])
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"new_version={new}\n")
 
       - name: Update pyproject.toml version
         run: |

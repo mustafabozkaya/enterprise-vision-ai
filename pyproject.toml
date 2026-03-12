@@ -86,8 +86,8 @@ enterprise-vision-ai = "app:main"
 
 # Tool configurations
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["pages*", "utils*", "services*", "clients*", "api*", "bas_ai*", "enterprise_vision_ai*"]
+where = ["src"]
+include = ["enterprise_vision_ai*"]
 exclude = ["tests*", "docs*"]
 
 [tool.black]
@@ -129,14 +129,14 @@ ignore_missing_imports = true
 minversion = "7.0"
 addopts = "-ra -q --strict-markers"
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "src"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
 
 [tool.coverage.run]
-source = ["app", "pages", "services", "clients", "api"]
+source = ["src/enterprise_vision_ai", "app", "pages", "services"]
 omit = [
     "*/tests/*",
     "*/test_*.py",

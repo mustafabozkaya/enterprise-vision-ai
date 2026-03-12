@@ -4,10 +4,6 @@ Enterprise Vision AI - Core Package
 This package provides the core functionality for the Enterprise Vision AI project,
 including model management, data loading, and utilities for industrial AI applications.
 
-Subpackages:
-- models: Model loading, registry, and management
-- datasets: Dataset utilities and data loaders
-
 Example usage:
     from enterprise_vision_ai import load_model, load_dataset
 
@@ -26,17 +22,13 @@ from enterprise_vision_ai.datasets.data_loader import (
     OreClassificationDataset,
     load_dataset,
 )
-
-# Import main components for easy access
 from enterprise_vision_ai.models.model_manager import ModelManager, load_model
 
 __all__ = [
-    # Version
     "__version__",
-    # Model management
+    "__author__",
     "ModelManager",
     "load_model",
-    # Dataset utilities
     "DefectDetectionDataset",
     "OreClassificationDataset",
     "load_dataset",

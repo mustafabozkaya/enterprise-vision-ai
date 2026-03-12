@@ -188,7 +188,7 @@ yolov8x.pt
 # Hugging Face
 *.bin
 *.safetensors
-models/
+/models/
 transformers_cache/
 
 # MLflow
@@ -225,7 +225,7 @@ wandb/
 # Raw data
 raw_data/
 processed_data/
-datasets/
+/datasets/
 data/raw/
 data/processed/
 data/cache/
@@ -234,6 +234,10 @@ data/cache/
 # IDEs
 # -----------------------------------------------------------------------------
 
+#kilo
+.kilocode/*
+.claude/*
+
 # VS Code
 .vscode/
 !.vscode/settings.json
@@ -241,6 +245,8 @@ data/cache/
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
+
+
 
 # JetBrains
 .idea/

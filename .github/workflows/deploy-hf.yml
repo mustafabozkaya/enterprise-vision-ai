@@ -25,7 +25,7 @@ jobs:
       - name: Deploy to HuggingFace Space
         run: |
           python -c "
-          from huggingface_hub import HfApi, create_space
+          from huggingface_hub import HfApi
           import os
           
           token = os.environ.get('HF_TOKEN')

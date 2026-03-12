@@ -1,7 +1,7 @@
 # Enterprise Vision AI - Project Specification
 
-> **Version:** 2.0.0-Enterprise  
-> **Last Updated:** 2026-03-08  
+> **Version:** 2.0.0-Enterprise
+> **Last Updated:** 2026-03-08
 > **Status:** Draft for Review
 
 ---
@@ -18,13 +18,13 @@ To democratize industrial AI by providing a free, open-source, production-grade 
 
 ### 1.3 Core Values
 
-| Value | Description |
-|-------|-------------|
-| **Openness** | Full transparency in algorithms, training pipelines, and model architectures |
+| Value                 | Description                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| **Openness**    | Full transparency in algorithms, training pipelines, and model architectures               |
 | **Scalability** | Design for deployment from single-camera edge devices to multi-site enterprise deployments |
-| **Performance** | Real-time inference with minimal latency for production line integration |
-| **Community** | Foster contributions from researchers, engineers, and industry experts |
-| **Reliability** | Enterprise-grade stability with comprehensive testing and validation |
+| **Performance** | Real-time inference with minimal latency for production line integration                   |
+| **Community**   | Foster contributions from researchers, engineers, and industry experts                     |
+| **Reliability** | Enterprise-grade stability with comprehensive testing and validation                       |
 
 ### 1.4 Current State vs. Target State
 
@@ -32,21 +32,21 @@ To democratize industrial AI by providing a free, open-source, production-grade 
 graph LR
     A[MVP v1.0] -->|Transform| B[Enterprise v2.0]
     B --> C[Platform v3.0]
-    
+  
     subgraph Current
         A1[Streamlit Only]
         A2[2 Modules]
         A3[Basic Model Loading]
         A4[No CI/CD]
     end
-    
+  
     subgraph Target v2.0
         B1[Modular Architecture]
         B2[6+ Modules]
         B3[MLflow Integration]
         B4[Full CI/CD]
     end
-    
+  
     subgraph Platform v3.0
         C1[Plugin System]
         C2[Multi-modal AI]
@@ -69,54 +69,54 @@ graph TB
         API[REST API]
         Edge[Edge Devices]
     end
-    
+  
     subgraph "Application Layer"
         Streamlit[Streamlit UI]
         API_Server[FastAPI Backend]
         WebSocket[WebSocket Server]
     end
-    
+  
     subgraph "Core Services"
         ML_Service[ML Inference Service]
         Preprocessor[Image Preprocessing]
         Postprocessor[Result Postprocessing]
         Scheduler[Task Scheduler]
     end
-    
+  
     subgraph "Model Layer"
         YOLO[YOLO11 Models]
         Transform[Vision Transformers]
         Registry[Model Registry]
         Versioning[MLflow Versioning]
     end
-    
+  
     subgraph "Data Layer"
         Dataset[Dataset Manager]
         Cache[Redis Cache]
         Storage[Object Storage]
         DB[(PostgreSQL)]
     end
-    
+  
     subgraph "Infrastructure"
         Docker[Docker/Kubernetes]
         HF[HuggingFace Spaces]
         Cloud[Cloud Providers]
     end
-    
+  
     Web --> Streamlit
     Mobile --> API
     API --> API_Server
     Edge --> WebSocket
-    
+  
     Streamlit --> ML_Service
     API_Server --> ML_Service
     WebSocket --> ML_Service
-    
+  
     ML_Service --> YOLO
     ML_Service --> Transform
     ML_Service --> Registry
     Registry --> Versioning
-    
+  
     Preprocessor --> Dataset
     Postprocessor --> Cache
     ML_Service --> Storage
@@ -133,7 +133,7 @@ classDiagram
         +predict()
         +export()
     }
-    
+  
     class YOLOAdapter {
         -model: YOLO
         -config: ModelConfig
@@ -142,7 +142,7 @@ classDiagram
         +predict_video()
         +export_onnx()
     }
-    
+  
     class DefectDetector {
         -model: YOLOAdapter
         -classes: List[str]
@@ -150,7 +150,7 @@ classDiagram
         +calculate_severity()
         +generate_report()
     }
-    
+  
     class OreClassifier {
         -model: YOLOAdapter
         -classes: List[str]
@@ -158,7 +158,7 @@ classDiagram
         +calculate_metal_ratio()
         +get_diverter_action()
     }
-    
+  
     class ModelRegistry {
         -storage: ModelStorage
         -metadata: MetadataStore
@@ -167,7 +167,7 @@ classDiagram
         +get_by_version()
         +list_models()
     }
-    
+  
     class InferenceEngine {
         -models: Dict[str, BaseModel]
         -cache: InferenceCache
@@ -175,7 +175,7 @@ classDiagram
         +batch_run()
         +stream_run()
     }
-    
+  
     BaseModel <|-- YOLOAdapter
     YOLOAdapter <|-- DefectDetector
     YOLOAdapter <|-- OreClassifier
@@ -187,33 +187,33 @@ classDiagram
 
 #### Core Technologies
 
-| Category | Technology | Version | Purpose |
-|----------|------------|---------|---------|
-| **Frontend** | Streamlit | ≥1.35.0 | Web UI Framework |
-| **Frontend** | React | ≥18.2.0 | Alternative Web UI |
-| **Backend** | FastAPI | ≥0.115.0 | REST API Server |
-| **ML Framework** | Ultralytics | ≥8.3.0 | YOLO Implementation |
-| **ML Framework** | PyTorch | ≥2.5.0 | Deep Learning Backend |
-| **Computer Vision** | OpenCV | ≥4.10.0 | Image Processing |
-| **Visualization** | Plotly | ≥5.24.0 | Charts and Graphs |
+| Category                  | Technology  | Version   | Purpose               |
+| ------------------------- | ----------- | --------- | --------------------- |
+| **Frontend**        | Streamlit   | ≥1.35.0  | Web UI Framework      |
+| **Frontend**        | React       | ≥18.2.0  | Alternative Web UI    |
+| **Backend**         | FastAPI     | ≥0.115.0 | REST API Server       |
+| **ML Framework**    | Ultralytics | ≥8.3.0   | YOLO Implementation   |
+| **ML Framework**    | PyTorch     | ≥2.5.0   | Deep Learning Backend |
+| **Computer Vision** | OpenCV      | ≥4.10.0  | Image Processing      |
+| **Visualization**   | Plotly      | ≥5.24.0  | Charts and Graphs     |
 
 #### Data & Storage
 
-| Category | Technology | Version | Purpose |
-|----------|------------|---------|---------|
-| **Database** | PostgreSQL | ≥16.0 | Primary Database |
-| **Cache** | Redis | ≥7.4 | Inference Caching |
-| **Object Storage** | MinIO/S3 | Latest | Model & Data Storage |
-| **Model Registry** | MLflow | ≥2.19.0 | Model Versioning |
+| Category                 | Technology | Version  | Purpose              |
+| ------------------------ | ---------- | -------- | -------------------- |
+| **Database**       | PostgreSQL | ≥16.0   | Primary Database     |
+| **Cache**          | Redis      | ≥7.4    | Inference Caching    |
+| **Object Storage** | MinIO/S3   | Latest   | Model & Data Storage |
+| **Model Registry** | MLflow     | ≥2.19.0 | Model Versioning     |
 
 #### DevOps & Infrastructure
 
-| Category | Technology | Version | Purpose |
-|----------|------------|---------|---------|
-| **Container** | Docker | ≥26.0 | Application Packaging |
-| **Orchestration** | Kubernetes | ≥1.30 | Container Orchestration |
-| **CI/CD** | GitHub Actions | Latest | Automation |
-| **HF Spaces** | Gradio | ≥4.44.0 | Demo Platform |
+| Category                | Technology     | Version  | Purpose                 |
+| ----------------------- | -------------- | -------- | ----------------------- |
+| **Container**     | Docker         | ≥26.0   | Application Packaging   |
+| **Orchestration** | Kubernetes     | ≥1.30   | Container Orchestration |
+| **CI/CD**         | GitHub Actions | Latest   | Automation              |
+| **HF Spaces**     | Gradio         | ≥4.44.0 | Demo Platform           |
 
 ---
 
@@ -221,7 +221,6 @@ classDiagram
 
 ### 3.1 Recommended Repository Layout
 
-```
 bas-endustriyel-ai/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
@@ -271,7 +270,7 @@ bas-endustriyel-ai/
 │       ├── evaluation.ipynb
 │       └── deployment.ipynb
 ├── src/
-│   └── bas_ai/
+│   └── enterprise_vision_ai/
 │       ├── __init__.py
 │       ├── __version__.py
 │       ├── main.py
@@ -409,20 +408,19 @@ bas-endustriyel-ai/
     ├── requirements.txt
     ├── README.md
     └── hardware.yaml
-```
 
 ### 3.2 File Descriptions
 
-| Path | Description |
-|------|-------------|
-| `.github/workflows/ci.yml` | Continuous Integration pipeline |
-| `.github/workflows/release.yml` | Release and version management |
-| `docker/Dockerfile` | Multi-stage build for production |
-| `docker/docker-compose.yml` | Local development environment |
-| `src/bas_ai/` | Core package with modular structure |
-| `tests/` | Comprehensive test suite |
-| `configs/` | Environment-specific configurations |
-| `huggingface/` | HuggingFace Spaces deployment files |
+| Path                              | Description                         |
+| --------------------------------- | ----------------------------------- |
+| `.github/workflows/ci.yml`      | Continuous Integration pipeline     |
+| `.github/workflows/release.yml` | Release and version management      |
+| `docker/Dockerfile`             | Multi-stage build for production    |
+| `docker/docker-compose.yml`     | Local development environment       |
+| `src/enterprise_vision_ai/`     | Core package with modular structure |
+| `tests/`                        | Comprehensive test suite            |
+| `configs/`                      | Environment-specific configurations |
+| `huggingface/`                  | HuggingFace Spaces deployment files |
 
 ---
 
@@ -430,18 +428,18 @@ bas-endustriyel-ai/
 
 ### 4.1 Version 1.0 - Foundation (Current MVP)
 
-**Status:** ✅ Completed  
+**Status:** ✅ Completed
 **Timeline:** Q1 2026
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Basic UI | Streamlit-based interface | ✅ |
-| Defect Detection | YOLO11-based surface defect detection | ✅ |
-| Ore Classification | Mineral classification (Magnetite, Chrome, Waste) | ✅ |
-| Image Upload | Single/multiple image inference | ✅ |
-| Video Processing | Video file upload and analysis | ✅ |
-| Visualization | Bounding boxes, masks, confidence scores | ✅ |
-| Basic Metrics | Anomaly scoring, severity levels | ✅ |
+| Feature            | Description                                       | Status |
+| ------------------ | ------------------------------------------------- | ------ |
+| Basic UI           | Streamlit-based interface                         | ✅     |
+| Defect Detection   | YOLO11-based surface defect detection             | ✅     |
+| Ore Classification | Mineral classification (Magnetite, Chrome, Waste) | ✅     |
+| Image Upload       | Single/multiple image inference                   | ✅     |
+| Video Processing   | Video file upload and analysis                    | ✅     |
+| Visualization      | Bounding boxes, masks, confidence scores          | ✅     |
+| Basic Metrics      | Anomaly scoring, severity levels                  | ✅     |
 
 ### 4.2 Version 2.0 - Enterprise (Q2-Q3 2026)
 
@@ -449,60 +447,60 @@ bas-endustriyel-ai/
 
 #### 2.0.1 - Core Infrastructure (Month 1-2)
 
-| Feature | Description | Priority | Status |
-|---------|-------------|----------|--------|
-| REST API | FastAPI-based inference API | P0 | ✅ Implemented |
-| Model Registry | MLflow integration for version control | P0 | ⏳ Planned |
-| Database | PostgreSQL for metadata and logs | P0 | ⏳ Planned |
-| Redis Caching | Inference result caching | P1 | ⏳ Planned |
-| Docker Support | Containerized deployment | P0 | ✅ Implemented |
-| Kubernetes Configs | K8s manifests for production | P1 | ⏳ Planned |
+| Feature            | Description                            | Priority | Status         |
+| ------------------ | -------------------------------------- | -------- | -------------- |
+| REST API           | FastAPI-based inference API            | P0       | ✅ Implemented |
+| Model Registry     | MLflow integration for version control | P0       | ⏳ Planned     |
+| Database           | PostgreSQL for metadata and logs       | P0       | ⏳ Planned     |
+| Redis Caching      | Inference result caching               | P1       | ⏳ Planned     |
+| Docker Support     | Containerized deployment               | P0       | ✅ Implemented |
+| Kubernetes Configs | K8s manifests for production           | P1       | ⏳ Planned     |
 
 #### 2.0.2 - Advanced Features (Month 2-3)
 
-| Feature | Description | Priority | Status |
-|---------|-------------|----------|--------|
-| Real-time Streaming | RTSP/IP camera integration | P0 | ✅ Implemented |
-| Batch Processing | Large dataset inference | P0 | ✅ Implemented |
-| Multi-model Support | Switch between model versions | P1 | ✅ Implemented |
-| WebSocket Support | Real-time inference updates | P1 | ⏳ Planned |
-| Model Export | ONNX/TensorRT export | P1 | ⏳ Planned |
-| Performance Monitoring | Latency, throughput tracking | P2 | ⏳ Planned |
+| Feature                | Description                   | Priority | Status         |
+| ---------------------- | ----------------------------- | -------- | -------------- |
+| Real-time Streaming    | RTSP/IP camera integration    | P0       | ✅ Implemented |
+| Batch Processing       | Large dataset inference       | P0       | ✅ Implemented |
+| Multi-model Support    | Switch between model versions | P1       | ✅ Implemented |
+| WebSocket Support      | Real-time inference updates   | P1       | ⏳ Planned     |
+| Model Export           | ONNX/TensorRT export          | P1       | ⏳ Planned     |
+| Performance Monitoring | Latency, throughput tracking  | P2       | ⏳ Planned     |
 
 #### 2.0.3 - Enterprise Features (Month 3-4)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| User Authentication | OAuth2/JWT authentication | P1 |
-| Role-based Access | Admin, Operator, Viewer roles | P1 |
-| Audit Logging | Complete action logging | P1 |
-| Alerting System | Email/Slack notifications | P2 |
-| Report Generation | PDF/CSV export reports | P2 |
-| API Rate Limiting | Request throttling | P2 |
+| Feature             | Description                   | Priority |
+| ------------------- | ----------------------------- | -------- |
+| User Authentication | OAuth2/JWT authentication     | P1       |
+| Role-based Access   | Admin, Operator, Viewer roles | P1       |
+| Audit Logging       | Complete action logging       | P1       |
+| Alerting System     | Email/Slack notifications     | P2       |
+| Report Generation   | PDF/CSV export reports        | P2       |
+| API Rate Limiting   | Request throttling            | P2       |
 
 #### 2.0.4 - Training Pipeline (Month 4-5)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| Dataset Manager | Upload, validate, organize datasets | P0 |
-| Training Scripts | End-to-end training pipeline | P1 |
-| Evaluation Framework | Comprehensive metrics and reports | P1 |
-| Experiment Tracking | MLflow experiments | P1 |
-| Model Benchmarking | Compare model performance | P2 |
+| Feature              | Description                         | Priority |
+| -------------------- | ----------------------------------- | -------- |
+| Dataset Manager      | Upload, validate, organize datasets | P0       |
+| Training Scripts     | End-to-end training pipeline        | P1       |
+| Evaluation Framework | Comprehensive metrics and reports   | P1       |
+| Experiment Tracking  | MLflow experiments                  | P1       |
+| Model Benchmarking   | Compare model performance           | P2       |
 
 ### 4.3 Version 3.0 - Platform (Q4 2026+)
 
 **Focus:** Platform expansion, automation, and ecosystem
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| Plugin System | Third-party model integration | P1 |
-| AutoML | Automated model selection and tuning | P2 |
-| Edge Deployment | NVIDIA Jetson, Raspberry Pi support | P1 |
-| Mobile App | iOS/Android companion app | P2 |
-| Multi-modal AI | Text, audio insights from video | P2 |
-| Federated Learning | Privacy-preserving training | P2 |
-| SaaS Platform | Cloud-hosted multi-tenant solution | P2 |
+| Feature            | Description                          | Priority |
+| ------------------ | ------------------------------------ | -------- |
+| Plugin System      | Third-party model integration        | P1       |
+| AutoML             | Automated model selection and tuning | P2       |
+| Edge Deployment    | NVIDIA Jetson, Raspberry Pi support  | P1       |
+| Mobile App         | iOS/Android companion app            | P2       |
+| Multi-modal AI     | Text, audio insights from video      | P2       |
+| Federated Learning | Privacy-preserving training          | P2       |
+| SaaS Platform      | Cloud-hosted multi-tenant solution   | P2       |
 
 ### 4.4 Roadmap Timeline
 
@@ -510,16 +508,16 @@ bas-endustriyel-ai/
 gantt
     title Enterprise Vision AI Development Roadmap
     dateFormat  YYYY-MM-DD
-    
+  
     section v1.0 Foundation
     MVP Development       :done,    des1, 2026-01-01, 2026-02-28
-    
+  
     section v2.0 Enterprise
     Core Infrastructure   :active,  des2, 2026-03-01, 2026-04-30
     Advanced Features     :         des3, 2026-05-01, 2026-06-30
     Enterprise Features   :         des4, 2026-07-01, 2026-08-31
     Training Pipeline     :         des5, 2026-09-01, 2026-10-31
-    
+  
     section v3.0 Platform
     Platform Development  :         des6, 2026-11-01, 2027-03-31
 ```
@@ -538,23 +536,23 @@ graph LR
         HF_Cache[Model Cache]
         HF_Storage[Static Storage]
     end
-    
+  
     subgraph "Model Hub"
         HF_Model[🤗 Model Hub]
         HF_Repo[Model Repository]
     end
-    
+  
     subgraph "External"
         S3[AWS S3 / MinIO]
         MLflow[MLflow Server]
     end
-    
+  
     User --> HF_UI
     HF_UI --> HF_API
     HF_API --> HF_Cache
     HF_Cache --> HF_Model
     HF_Model --> HF_Repo
-    
+  
     HF_API -.-> S3
     HF_API -.-> MLflow
 ```
@@ -599,7 +597,7 @@ def process_defect(image, conf_threshold=0.25):
     """Process defect detection"""
     model = get_defect_model()
     results = model.predict(image, conf=conf_threshold)
-    
+  
     # Visualize results
     annotated = results[0].plot()
     return annotated
@@ -608,7 +606,7 @@ def process_ore(image, conf_threshold=0.25):
     """Process ore classification"""
     model = get_ore_model()
     results = model.predict(image, conf=conf_threshold)
-    
+  
     # Visualize results
     annotated = results[0].plot()
     return annotated
@@ -617,7 +615,7 @@ def process_ore(image, conf_threshold=0.25):
 with gr.Blocks(title="Enterprise Vision AI Demo") as demo:
     gr.Markdown("# 🏭 Enterprise Vision AI")
     gr.Markdown("Industrial Computer Vision - Defect Detection & Ore Classification")
-    
+  
     with gr.Tab("Defect Detection"):
         with gr.Row():
             with gr.Column():
@@ -626,13 +624,13 @@ with gr.Blocks(title="Enterprise Vision AI Demo") as demo:
                 defect_btn = gr.Button("Detect Defects", variant="primary")
             with gr.Column():
                 defect_output = gr.Image(type="numpy", label="Result")
-        
+      
         defect_btn.click(
             fn=process_defect,
             inputs=[defect_input, defect_conf],
             outputs=defect_output
         )
-    
+  
     with gr.Tab("Ore Classification"):
         with gr.Row():
             with gr.Column():
@@ -641,7 +639,7 @@ with gr.Blocks(title="Enterprise Vision AI Demo") as demo:
                 ore_btn = gr.Button("Classify Ore", variant="primary")
             with gr.Column():
                 ore_output = gr.Image(type="numpy", label="Result")
-        
+      
         ore_btn.click(
             fn=process_ore,
             inputs=[ore_input, ore_conf],
@@ -728,7 +726,7 @@ sequenceDiagram
     participant CI as GitHub Actions
     participant HF as HuggingFace Hub
     participant Space as HF Space
-    
+  
     Dev->>GH: Push code/model
     CI->>CI: Trigger on model update
     CI->>CI: Run tests & validation
@@ -743,10 +741,7 @@ sequenceDiagram
 
 ### 6.1 GitHub Actions Workflows
 
-#### Main CI Pipeline (`.github/workflows/ci.yml`)
-
-```yaml
-name: CI
+#### Main CI Pipeline (`.github/workflows/ci.yml`)name: CI
 
 on:
   push:
@@ -761,31 +756,31 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Python
+
+    - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-      
-      - name: Install dependencies
+
+    - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
-      
-      - name: Run linters
+
+    - name: Run linters
         run: |
           ruff check src/ tests/
-          mypy src/bas_ai/ --ignore-missing-imports
-      
-      - name: Run tests
+          mypy src/`enterprise_vision_ai`/ --ignore-missing-imports
+
+    - name: Run tests
         run: |
           pytest tests/ -v --cov=src --cov-report=xml
-      
-      - name: Upload coverage
+
+    - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
@@ -794,21 +789,21 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
+
+    - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
-      - name: Login to Container Registry
+
+    - name: Login to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Build and push Docker image
+
+    - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -823,16 +818,15 @@ jobs:
   build-docs:
     needs: test
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Build documentation
+
+    - name: Build documentation
         uses: actions/upload-artifact@v4
         with:
           name: docs
           path: docs/_build/
-```
 
 #### Release Pipeline (`.github/workflows/release.yml`)
 
@@ -854,30 +848,30 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+  
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+    
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+    
       - name: Install release tools
         pip install build twine wheel
-      
+    
       - name: Build package
         python -m build
-      
+    
       - name: Publish to PyPI
         if: github.event_name == 'release'
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
           twine upload dist/*
-      
+    
       - name: Create GitHub Release
         if: github.event_name == 'release'
         uses: actions/create-release@v1
@@ -892,25 +886,25 @@ jobs:
   docker-release:
     needs: release
     runs-on: ubuntu-latest
-    
+  
     steps:
       - uses: actions/checkout@v4
-      
+    
       - name: Pull latest image
         run: docker pull ghcr.io/${{ github.repository }}:latest
-      
+    
       - name: Tag for release
         run: |
           docker tag ghcr.io/${{ github.repository }}:latest \
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-      
+    
       - name: Push release tag
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+    
       - name: Push to registry
         run: |
           docker push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
@@ -925,36 +919,36 @@ flowchart LR
         Format[Code Formatting]
         Type[Type Checking]
     end
-    
+  
     subgraph Stage2[Stage 2: Testing]
         Unit[Unit Tests]
         Int[Integration Tests]
         E2E[End-to-End Tests]
     end
-    
+  
     subgraph Stage3[Stage 3: Build]
         Build[Build Package]
         Docker[Docker Build]
         Docs[Build Docs]
     end
-    
+  
     subgraph Stage4[Stage 4: Deploy]
         Publish[PyPI Release]
         Container[Container Registry]
         HF[HuggingFace Space]
     end
-    
+  
     Stage1 --> Stage2 --> Stage3 --> Stage4
 ```
 
 ### 6.3 Deployment Environments
 
-| Environment | Trigger | Description |
-|-------------|---------|-------------|
+| Environment           | Trigger             | Description                    |
+| --------------------- | ------------------- | ------------------------------ |
 | **Development** | Push to `develop` | Auto-deploy to dev environment |
-| **Staging** | Push to `main` | Pre-production testing |
-| **Production** | Release tag | Production deployment |
-| **Demo** | Model update | HuggingFace Space |
+| **Staging**     | Push to `main`    | Pre-production testing         |
+| **Production**  | Release tag         | Production deployment          |
+| **Demo**        | Model update        | HuggingFace Space              |
 
 ---
 
@@ -972,18 +966,18 @@ graph TB
         Deploy --> Monitor[Monitor]
         Monitor --> Archive[Archive]
     end
-    
+  
     subgraph "Storage"
         Local[Local Disk]
         S3[S3/MinIO]
         HF[🤗 Hub]
     end
-    
+  
     subgraph "Metadata"
         MLflow[MLflow Server]
         DB[(PostgreSQL)]
     end
-    
+  
     Register --> Local
     Register --> S3
     Register --> HF
@@ -1039,32 +1033,32 @@ def register_model(
 ):
     """Register model to MLflow"""
     config = load_config()
-    
+  
     mlflow.set_tracking_uri(config['mlflow']['tracking_uri'])
     client = MlflowClient()
-    
+  
     # Create or get experiment
     experiment = mlflow.get_or_create_experiment(
         config['mlflow']['experiment']['name']
     )
-    
+  
     with mlflow.start_run(experiment_id=experiment.experiment_id):
         # Log parameters
         mlflow.log_params(params)
-        
+      
         # Log metrics
         mlflow.log_metrics(metrics)
-        
+      
         # Log tags
         mlflow.set_tags(tags)
-        
+      
         # Log model
         model_info = mlflow.pytorch.log_model(
             artifact_path="model",
             pytorch_model=model_path,
             registered_model_name=model_name
         )
-        
+      
         # Transition to stage
         if stage != "None":
             client.transition_model_version_stage(
@@ -1072,7 +1066,7 @@ def register_model(
                 version=model_info.version,
                 stage=stage
             )
-    
+  
     return model_info
 
 # Example usage
@@ -1221,11 +1215,11 @@ class DatasetConfig:
 
 class DatasetManager:
     """Manage datasets for training and evaluation"""
-    
+  
     def __init__(self, base_path: Path):
         self.base_path = base_path
         self.datasets_path = base_path / "data" / "datasets"
-    
+  
     def create_dataset(
         self,
         name: str,
@@ -1234,15 +1228,15 @@ class DatasetManager:
         split_ratios: tuple = (0.7, 0.2, 0.1)
     ) -> DatasetConfig:
         """Create a new dataset from source images"""
-        
+      
         # Create dataset directory structure
         dataset_path = self.datasets_path / name
         dataset_path.mkdir(parents=True)
-        
+      
         for split in ['train', 'val', 'test']:
             (dataset_path / 'images' / split).mkdir(parents=True)
             (dataset_path / 'labels' / split).mkdir(parents=True)
-        
+      
         # Create dataset.yaml
         config = DatasetConfig(
             name=name,
@@ -1252,43 +1246,43 @@ class DatasetManager:
             test_split=split_ratios[2],
             classes=classes
         )
-        
+      
         self._save_config(dataset_path, config)
-        
+      
         return config
-    
+  
     def validate_dataset(self, dataset_path: Path) -> dict:
         """Validate dataset integrity"""
         issues = []
-        
+      
         # Check directory structure
         required_dirs = [
             'images/train', 'images/val', 'images/test',
             'labels/train', 'labels.val', 'labels/test'
         ]
-        
+      
         for dir_path in required_dirs:
             if not (dataset_path / dir_path).exists():
                 issues.append(f"Missing directory: {dir_path}")
-        
+      
         # Check image/label pairs
         for split in ['train', 'val', 'test']:
             images = set(p.stem for p in (dataset_path / 'images' / split).glob('*.jpg'))
             labels = set(p.stem for p in (dataset_path / 'labels' / split).glob('*.txt'))
-            
+          
             missing_labels = images - labels
             missing_images = labels - images
-            
+          
             if missing_labels:
                 issues.append(f"{split}: {len(missing_labels)} images without labels")
             if missing_images:
                 issues.append(f"{split}: {len(missing_images)} labels without images")
-        
+      
         return {
             "valid": len(issues) == 0,
             "issues": issues
         }
-    
+  
     def export_to_yolo(self, dataset_path: Path, output_path: Path):
         """Export dataset to YOLO format for training"""
         # Create zip file or copy to training location
@@ -1301,17 +1295,17 @@ class DatasetManager:
 
 ### 8.1 REST API Endpoints
 
-| Method | Endpoint | Description | Authentication |
-|--------|----------|-------------|----------------|
-| `GET` | `/health` | Health check | None |
-| `POST` | `/api/v1/detect` | Run defect detection | Optional |
-| `POST` | `/api/v1/classify` | Classify ore | Optional |
-| `POST` | `/api/v1/detect/batch` | Batch detection | Required |
-| `GET` | `/api/v1/models` | List models | Optional |
-| `GET` | `/api/v1/models/{name}` | Get model info | Optional |
-| `POST` | `/api/v1/models/{name}/predict` | Model inference | Required |
-| `GET` | `/api/v1/datasets` | List datasets | Optional |
-| `GET` | `/api/v1/history` | Get inference history | Required |
+| Method   | Endpoint                          | Description           | Authentication |
+| -------- | --------------------------------- | --------------------- | -------------- |
+| `GET`  | `/health`                       | Health check          | None           |
+| `POST` | `/api/v1/detect`                | Run defect detection  | Optional       |
+| `POST` | `/api/v1/classify`              | Classify ore          | Optional       |
+| `POST` | `/api/v1/detect/batch`          | Batch detection       | Required       |
+| `GET`  | `/api/v1/models`                | List models           | Optional       |
+| `GET`  | `/api/v1/models/{name}`         | Get model info        | Optional       |
+| `POST` | `/api/v1/models/{name}/predict` | Model inference       | Required       |
+| `GET`  | `/api/v1/datasets`              | List datasets         | Optional       |
+| `GET`  | `/api/v1/history`               | Get inference history | Required       |
 
 ### 8.2 API Schemas
 
@@ -1361,14 +1355,14 @@ class InferenceResponse(BaseModel):
 
 ### 9.1 Security Measures
 
-| Area | Implementation |
-|------|----------------|
-| **Authentication** | OAuth2 with JWT tokens |
-| **Authorization** | Role-based access control (RBAC) |
-| **API Security** | Rate limiting, input validation |
-| **Data Encryption** | TLS 1.3, AES-256 at rest |
+| Area                         | Implementation                         |
+| ---------------------------- | -------------------------------------- |
+| **Authentication**     | OAuth2 with JWT tokens                 |
+| **Authorization**      | Role-based access control (RBAC)       |
+| **API Security**       | Rate limiting, input validation        |
+| **Data Encryption**    | TLS 1.3, AES-256 at rest               |
 | **Secrets Management** | HashiCorp Vault or AWS Secrets Manager |
-| **Audit Logging** | Immutable audit trail |
+| **Audit Logging**      | Immutable audit trail                  |
 
 ### 9.2 Data Privacy
 
@@ -1384,6 +1378,7 @@ class InferenceResponse(BaseModel):
 ### 10.1 Contribution Guidelines
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed guidelines on:
+
 - Code style and conventions
 - Pull request process
 - Testing requirements
@@ -1434,6 +1429,7 @@ docker run -p 8501:8501 bas-ai:latest
 ### 11.3 HuggingFace Demo
 
 Visit our HuggingFace Space to try the demo:
+
 - **URL**: https://huggingface.co/spaces/basai/industrial-ai
 - **Features**: Defect detection, Ore classification
 
@@ -1453,7 +1449,7 @@ APP_HOST=0.0.0.0
 APP_PORT=8501
 
 # Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/bas_ai
+DATABASE_URL=postgresql://user:pass@localhost:5432/enterprise_vision_ai
 
 # Redis
 REDIS_URL=redis://localhost:6379/0
@@ -1474,12 +1470,12 @@ S3_BUCKET=bas-ai-models
 
 ### B. Model Performance Benchmarks
 
-| Model | mAP50 | mAP50-95 | FPS | Parameters |
-|-------|-------|-----------|-----|------------|
-| YOLO11n-seg | 0.85 | 0.72 | 120 | 2.6M |
-| YOLO11s-seg | 0.91 | 0.78 | 85 | 9.4M |
-| YOLO11m-seg | 0.94 | 0.82 | 45 | 25.9M |
-| YOLO11l-seg | 0.95 | 0.85 | 30 | 43.7M |
+| Model       | mAP50 | mAP50-95 | FPS | Parameters |
+| ----------- | ----- | -------- | --- | ---------- |
+| YOLO11n-seg | 0.85  | 0.72     | 120 | 2.6M       |
+| YOLO11s-seg | 0.91  | 0.78     | 85  | 9.4M       |
+| YOLO11m-seg | 0.94  | 0.82     | 45  | 25.9M      |
+| YOLO11l-seg | 0.95  | 0.85     | 30  | 43.7M      |
 
 ### C. Support & Resources
 

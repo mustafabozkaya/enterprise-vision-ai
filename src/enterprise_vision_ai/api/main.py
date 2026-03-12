@@ -14,7 +14,7 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from api.routes import inference, upload
+from api.routes import datasets, health, inference, models, upload
 from api.schemas.response import HealthResponse
 
 # Rate limiter yapılandırması
@@ -84,8 +84,11 @@ def create_application() -> FastAPI:
         )
 
     # Router'ları ekle
+    app.include_router(health.router)
     app.include_router(inference.router, prefix="/api/v1", tags=["Inference"])
     app.include_router(upload.router, prefix="/api/v1", tags=["Upload"])
+    app.include_router(models.router)
+    app.include_router(datasets.router)
 
     return app
 
