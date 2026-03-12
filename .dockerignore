@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python cache
+__pycache__
+*.py[cod]
+*.pyo
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test and coverage
+tests/
+coverage.xml
+.coverage
+htmlcov/
+
+# Large binary files - models and datasets
+/models/
+/datasets/
+*.pt
+*.pth
+*.onnx
+*.weights
+*.pb
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Uploads (runtime directory)
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD artifacts
+firebase-debug.log
