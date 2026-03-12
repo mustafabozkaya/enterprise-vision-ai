@@ -34,10 +34,7 @@ class BaseModel(ABC):
 
     @abstractmethod
     def predict(
-        self,
-        image: Union[np.ndarray, Image.Image],
-        confidence: float = 0.25,
-        **kwargs
+        self, image: Union[np.ndarray, Image.Image], confidence: float = 0.25, **kwargs
     ) -> List[Dict]:
         """
         Run inference on single image.
@@ -54,10 +51,7 @@ class BaseModel(ABC):
 
     @abstractmethod
     def predict_batch(
-        self,
-        images: List[Union[np.ndarray, Image.Image]],
-        confidence: float = 0.25,
-        **kwargs
+        self, images: List[Union[np.ndarray, Image.Image]], confidence: float = 0.25, **kwargs
     ) -> List[List[Dict]]:
         """
         Run inference on batch of images.
@@ -105,4 +99,5 @@ class BaseModel(ABC):
         self.model = None
         self._loaded = False
         import gc
+
         gc.collect()

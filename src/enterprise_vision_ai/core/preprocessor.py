@@ -101,10 +101,7 @@ class Preprocessor:
         Returns:
             Batch of preprocessed images
         """
-        processed = [
-            self.process(img, maintain_aspect_ratio)
-            for img in images
-        ]
+        processed = [self.process(img, maintain_aspect_ratio) for img in images]
         return np.stack(processed, axis=0)
 
     def _load_image(self, path: str) -> np.ndarray:
@@ -124,15 +121,13 @@ class Preprocessor:
 
         # Create padded image
         padded = np.full(
-            (self.input_size, self.input_size, 3),
-            114,  # Gray padding
-            dtype=image.dtype
+            (self.input_size, self.input_size, 3), 114, dtype=image.dtype  # Gray padding
         )
 
         # Center the resized image
         y_offset = (self.input_size - new_h) // 2
         x_offset = (self.input_size - new_w) // 2
-        padded[y_offset:y_offset + new_h, x_offset:x_offset + new_w] = resized
+        padded[y_offset : y_offset + new_h, x_offset : x_offset + new_w] = resized
 
         return padded
 

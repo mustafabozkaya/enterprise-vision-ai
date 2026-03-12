@@ -21,8 +21,8 @@ Example:
     results = model.predict("image.jpg")
 """
 
-from typing import Any, Dict, Optional
 import os
+from typing import Any, Dict, Optional
 
 
 class ModelManager:

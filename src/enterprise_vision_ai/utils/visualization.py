@@ -155,9 +155,7 @@ def draw_annotations(
                         label += f" {conf:.2f}"
 
                     # Label background
-                    (label_w, label_h), _ = cv2.getTextSize(
-                        label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
-                    )
+                    (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
                     cv2.rectangle(
                         result_image,
                         (x1, y1 - label_h - 10),
@@ -178,9 +176,7 @@ def draw_annotations(
     return result_image
 
 
-def draw_severity_indicator(
-    image: np.ndarray, severity: str, score: float
-) -> np.ndarray:
+def draw_severity_indicator(image: np.ndarray, severity: str, score: float) -> np.ndarray:
     """
     Add severity indicator to image.
 

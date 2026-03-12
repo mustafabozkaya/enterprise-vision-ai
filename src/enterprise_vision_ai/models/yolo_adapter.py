@@ -37,24 +37,19 @@ class YOLOAdapter(BaseModel):
         try:
             from ultralytics import YOLO
         except ImportError:
-            raise ImportError(
-                "Ultralytics is required. Install with: pip install ultralytics"
-            )
+            raise ImportError("Ultralytics is required. Install with: pip install ultralytics")
 
         self.model = YOLO(self.model_path)
         self._loaded = True
 
         # Extract class names
-        if hasattr(self.model, 'names'):
+        if hasattr(self.model, "names"):
             self._class_names = self.model.names
-        elif hasattr(self.model, 'model') and hasattr(self.model.model, 'names'):
+        elif hasattr(self.model, "model") and hasattr(self.model.model, "names"):
             self._class_names = self.model.model.names
 
     def predict(
-        self,
-        image: Union[np.ndarray, Image.Image],
-        confidence: float = 0.25,
-        **kwargs
+        self, image: Union[np.ndarray, Image.Image], confidence: float = 0.25, **kwargs
     ) -> Any:
         """
         Run YOLO inference on image.
@@ -74,11 +69,7 @@ class YOLOAdapter(BaseModel):
             raise RuntimeError("Model not loaded. Call load() first.")
 
         # Prepare parameters
-        params = {
-            "conf": confidence,
-            "verbose": self.verbose,
-            **kwargs
-        }
+        params = {"conf": confidence, "verbose": self.verbose, **kwargs}
 
         # Add device if specified
         if self.device != "auto":
@@ -91,10 +82,7 @@ class YOLOAdapter(BaseModel):
         return results[0] if results else None
 
     def predict_batch(
-        self,
-        images: List[Union[np.ndarray, Image.Image]],
-        confidence: float = 0.25,
-        **kwargs
+        self, images: List[Union[np.ndarray, Image.Image]], confidence: float = 0.25, **kwargs
     ) -> List[Any]:
         """
         Run inference on batch of images.
@@ -110,11 +98,7 @@ class YOLOAdapter(BaseModel):
         if not self._loaded:
             raise RuntimeError("Model not loaded. Call load() first.")
 
-        params = {
-            "conf": confidence,
-            "verbose": self.verbose,
-            **kwargs
-        }
+        params = {"conf": confidence, "verbose": self.verbose, **kwargs}
 
         if self.device != "auto":
             params["device"] = self.device
@@ -152,9 +136,9 @@ class YOLOAdapter(BaseModel):
             info["num_classes"] = len(self._class_names)
 
         # Get model metadata if available
-        if hasattr(self.model, 'model') and hasattr(self.model.model, 'args'):
+        if hasattr(self.model, "model") and hasattr(self.model.model, "args"):
             args = self.model.model.args
-            if hasattr(args, 'imgsz'):
+            if hasattr(args, "imgsz"):
                 info["input_size"] = args.imgsz
 
         return info

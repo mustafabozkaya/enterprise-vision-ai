@@ -106,7 +106,9 @@ class ModelLoader:
         try:
             from huggingface_hub import hf_hub_download
         except ImportError:
-            raise ImportError("huggingface_hub is required. Install with: pip install huggingface-hub")
+            raise ImportError(
+                "huggingface_hub is required. Install with: pip install huggingface-hub"
+            )
 
         # Download model to cache
         model_path = hf_hub_download(

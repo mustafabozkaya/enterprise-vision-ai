@@ -4,7 +4,7 @@ Ore classification model.
 Specialized model for mineral ore classification.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from enterprise_vision_ai.models.yolo_adapter import YOLOAdapter
 
@@ -31,7 +31,7 @@ class OreClassifier(YOLOAdapter):
     # Typical metal ratios (for estimation)
     DEFAULT_METAL_RATIOS = {
         "manyetit": 0.72,  # 72% Fe
-        "krom": 0.46,      # 46% Cr
+        "krom": 0.46,  # 46% Cr
         "atık": 0.0,
         "düşük tenör": 0.15,
     }
@@ -69,12 +69,14 @@ class OreClassifier(YOLOAdapter):
     def get_info(self) -> Dict[str, Any]:
         """Get ore classifier information."""
         info = super().get_info()
-        info.update({
-            "type": "ore_classifier",
-            "application": "mineral_classification",
-            "metal_ratios": self.metal_ratios,
-            "ore_descriptions": self.ORE_DESCRIPTIONS,
-        })
+        info.update(
+            {
+                "type": "ore_classifier",
+                "application": "mineral_classification",
+                "metal_ratios": self.metal_ratios,
+                "ore_descriptions": self.ORE_DESCRIPTIONS,
+            }
+        )
         return info
 
     def get_ore_description(self, ore_type: str) -> str:
@@ -125,9 +127,9 @@ class OreClassifier(YOLOAdapter):
         weighted_metal_ratio = 0.0
 
         for det in results:
-            class_name = getattr(det, 'class_name', 'unknown')
-            confidence = getattr(det, 'confidence', 0)
-            area = getattr(det, 'area', 1.0)
+            class_name = getattr(det, "class_name", "unknown")
+            confidence = getattr(det, "confidence", 0)
+            area = getattr(det, "area", 1.0)
 
             ores_by_type[class_name] = ores_by_type.get(class_name, 0) + 1
             total_confidence += confidence
@@ -136,7 +138,7 @@ class OreClassifier(YOLOAdapter):
             metal_ratio = self.estimate_metal_ratio(class_name)
             weighted_metal_ratio += metal_ratio * area * confidence
 
-        total_area = sum(getattr(det, 'area', 1.0) for det in results)
+        total_area = sum(getattr(det, "area", 1.0) for det in results)
         avg_confidence = total_confidence / len(results) if results else 0
 
         # Normalize weighted ratio
@@ -168,9 +170,9 @@ class OreClassifier(YOLOAdapter):
             return "reject"
 
         # Get most confident prediction
-        best = max(results, key=lambda x: getattr(x, 'confidence', 0))
-        class_name = getattr(best, 'class_name', 'unknown')
-        confidence = getattr(best, 'confidence', 0)
+        best = max(results, key=lambda x: getattr(x, "confidence", 0))
+        class_name = getattr(best, "class_name", "unknown")
+        confidence = getattr(best, "confidence", 0)
 
         # Decision logic
         if confidence < 0.5:

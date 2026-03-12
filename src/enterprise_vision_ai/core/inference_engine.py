@@ -71,9 +71,7 @@ class InferenceEngine:
             raise ValueError("Model path must be provided")
 
         self.model = self.model_loader.load(
-            model_path,
-            model_type=self.model_type,
-            config={"device": self.device, **kwargs}
+            model_path, model_type=self.model_type, config={"device": self.device, **kwargs}
         )
 
     def run(
@@ -110,8 +108,7 @@ class InferenceEngine:
         # Run inference
         infer_start = time.time()
         raw_results = self.model.predict(
-            processed_image,
-            confidence=confidence or self.postprocessor.confidence_threshold
+            processed_image, confidence=confidence or self.postprocessor.confidence_threshold
         )
         infer_time = time.time() - infer_start
 
@@ -160,10 +157,7 @@ class InferenceEngine:
         Returns:
             List of result dictionaries
         """
-        return [
-            self.run(img, confidence)
-            for img in images
-        ]
+        return [self.run(img, confidence) for img in images]
 
     def get_stats(self) -> Dict[str, Any]:
         """

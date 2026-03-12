@@ -6,6 +6,8 @@ Computer Vision Projesi için REST API
 import time
 from contextlib import asynccontextmanager
 
+from api.routes import datasets, health, inference, models, upload
+from api.schemas.response import HealthResponse
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -13,9 +15,6 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-
-from api.routes import datasets, health, inference, models, upload
-from api.schemas.response import HealthResponse
 
 # Rate limiter yapılandırması
 limiter = Limiter(key_func=get_remote_address)

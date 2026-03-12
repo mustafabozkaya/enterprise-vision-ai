@@ -8,7 +8,8 @@ Handles:
 - Annotation generation
 """
 
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
 
@@ -94,7 +95,7 @@ class Postprocessor:
         """
         # This will be overridden by specific implementations
         # Default behavior for YOLO results
-        if hasattr(raw_results, 'boxes'):
+        if hasattr(raw_results, "boxes"):
             return self._process_yolo_result(raw_results, original_image_shape)
 
         return []

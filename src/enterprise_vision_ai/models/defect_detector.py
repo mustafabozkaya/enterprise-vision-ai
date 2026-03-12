@@ -4,7 +4,7 @@ Defect detection model.
 Specialized model for industrial surface defect detection.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from enterprise_vision_ai.models.yolo_adapter import YOLOAdapter
 
@@ -58,12 +58,14 @@ class DefectDetector(YOLOAdapter):
     def get_info(self) -> Dict[str, Any]:
         """Get defect detector information."""
         info = super().get_info()
-        info.update({
-            "type": "defect_detector",
-            "application": "surface_defect_detection",
-            "severity_thresholds": self.severity_thresholds,
-            "class_descriptions": self.CLASS_DESCRIPTIONS,
-        })
+        info.update(
+            {
+                "type": "defect_detector",
+                "application": "surface_defect_detection",
+                "severity_thresholds": self.severity_thresholds,
+                "class_descriptions": self.CLASS_DESCRIPTIONS,
+            }
+        )
         return info
 
     def get_class_description(self, class_name: str) -> str:
@@ -101,8 +103,8 @@ class DefectDetector(YOLOAdapter):
         total_confidence = 0.0
 
         for det in results:
-            class_name = getattr(det, 'class_name', 'unknown')
-            confidence = getattr(det, 'confidence', 0)
+            class_name = getattr(det, "class_name", "unknown")
+            confidence = getattr(det, "confidence", 0)
 
             defects_by_type[class_name] = defects_by_type.get(class_name, 0) + 1
             total_confidence += confidence

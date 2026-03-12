@@ -13,8 +13,8 @@ Functions:
     load_dataset: Convenience function to load a dataset by name
 """
 
-from typing import Any, Dict, List, Optional, Tuple
 import os
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class DefectDetectionDataset:
