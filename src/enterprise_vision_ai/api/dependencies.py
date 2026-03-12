@@ -6,13 +6,13 @@ Model yükleme, authentication ve rate limiting için bağımlılıklar
 from functools import lru_cache
 from typing import Any, Dict, Optional
 
-from clients.yolo_client import YOLOModelManager
+from enterprise_vision_ai.clients.yolo_client import YOLOModelManager
 from fastapi import Depends, Header, HTTPException, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from services.inference_service import InferenceService
-from services.model_service import ModelService
+from enterprise_vision_ai.services.inference_service import InferenceService
+from enterprise_vision_ai.services.model_service import ModelService
 
 # =============================================================================
 # Singleton Instances

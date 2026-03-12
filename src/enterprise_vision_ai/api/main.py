@@ -6,8 +6,8 @@ Computer Vision Projesi için REST API
 import time
 from contextlib import asynccontextmanager
 
-from api.routes import datasets, health, inference, models, upload
-from api.schemas.response import HealthResponse
+from enterprise_vision_ai.api.routes import datasets, health, inference, models, upload
+from enterprise_vision_ai.api.schemas.response import HealthResponse
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 
     # Kapatma: Kaynakları temizle
     print("API Gateway shutting down...")
-    from clients.yolo_client import yolo_model_manager
+    from enterprise_vision_ai.clients.yolo_client import yolo_model_manager
 
     yolo_model_manager.unload_all_models()
 
@@ -115,7 +115,7 @@ async def health_check(request: Request):
     Sağlık kontrolü endpoint'i.
     API'nin çalışır durumda olduğunu kontrol eder.
     """
-    from clients.yolo_client import yolo_model_manager
+    from enterprise_vision_ai.clients.yolo_client import yolo_model_manager
 
     # Model durumlarını kontrol et
     model_status = yolo_model_manager.get_loaded_models()

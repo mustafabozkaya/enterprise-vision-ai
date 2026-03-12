@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiofiles
-from api.schemas.response import BatchUploadResponse, ErrorResponse, UploadedFile, UploadResponse
+from enterprise_vision_ai.api.schemas.response import BatchUploadResponse, ErrorResponse, UploadedFile, UploadResponse
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
