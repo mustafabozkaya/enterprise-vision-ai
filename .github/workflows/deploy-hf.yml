@@ -3,42 +3,52 @@ name: Deploy to HF Space
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (sparse — only huggingface_space/)
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: huggingface_space
+          sparse-checkout-cone-mode: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install huggingface_hub
+      - name: Install huggingface_hub
+        run: pip install --no-cache-dir huggingface_hub
 
       - name: Deploy to HuggingFace Space
+        if: ${{ secrets.HF_TOKEN != '' }}
         run: |
           python -c "
           from huggingface_hub import HfApi
           import os
-          
-          token = os.environ.get('HF_TOKEN')
+
+          token = os.environ['HF_TOKEN']
           api = HfApi(token=token)
-          
-          # Upload the huggingface_space folder to the Space
+
           api.upload_folder(
               folder_path='huggingface_space',
               repo_id='mustafabozkaya/enterprise-vision-ai',
               repo_type='space',
-              commit_message='Deploy from GitHub Actions'
+              commit_message='Deploy from GitHub Actions',
           )
           print('Successfully deployed to HuggingFace Space!')
           "
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+      - name: Skip deploy (HF_TOKEN not configured)
+        if: ${{ secrets.HF_TOKEN == '' }}
+        run: echo "HF_TOKEN secret not set — skipping HF Space deploy. Configure it in repo Settings > Secrets."
