@@ -38,16 +38,21 @@ class InferenceService:
                     names = getattr(r, "names", {})
                     for box in boxes:
                         x1, y1, x2, y2, conf, cls_id = (
-                            float(box[0]), float(box[1]),
-                            float(box[2]), float(box[3]),
-                            float(box[4]), int(box[5]),
+                            float(box[0]),
+                            float(box[1]),
+                            float(box[2]),
+                            float(box[3]),
+                            float(box[4]),
+                            int(box[5]),
                         )
-                        detections.append({
-                            "class_name": names.get(cls_id, str(cls_id)),
-                            "class_id": cls_id,
-                            "confidence": round(conf, 4),
-                            "bbox": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
-                        })
+                        detections.append(
+                            {
+                                "class_name": names.get(cls_id, str(cls_id)),
+                                "class_id": cls_id,
+                                "confidence": round(conf, 4),
+                                "bbox": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
+                            }
+                        )
         return {
             "detections": detections,
             "model_used": model_name,

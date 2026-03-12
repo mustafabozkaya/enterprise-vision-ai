@@ -6,6 +6,11 @@ Defect Detection & Ore Classification API Endpoints
 import time
 from typing import List, Optional
 
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
 from enterprise_vision_ai.api.dependencies import get_inference_service, get_model_service
 from enterprise_vision_ai.api.schemas.request import InferenceRequest, ModelListRequest
 from enterprise_vision_ai.api.schemas.response import (
@@ -15,11 +20,6 @@ from enterprise_vision_ai.api.schemas.response import (
     InferenceResponse,
     ModelInfo,
 )
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile, status
-from fastapi.responses import JSONResponse
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
 from enterprise_vision_ai.services.inference_service import InferenceService
 from enterprise_vision_ai.services.model_service import ModelService
 

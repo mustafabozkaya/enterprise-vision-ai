@@ -9,7 +9,7 @@ from enterprise_vision_ai.clients.yolo_client import YOLOModelManager
 AVAILABLE_MODELS = [
     {"name": "yolo11n-seg.pt", "version": "11n", "type": "segmentation"},
     {"name": "yolo11s-seg.pt", "version": "11s", "type": "segmentation"},
-    {"name": "yolo11n.pt",     "version": "11n", "type": "detection"},
+    {"name": "yolo11n.pt", "version": "11n", "type": "detection"},
 ]
 
 
