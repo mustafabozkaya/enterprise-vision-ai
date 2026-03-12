@@ -114,10 +114,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check if Docker-related files changed
+        id: docker_changes
+        run: |
+          git fetch origin main --depth=2
+          CHANGED=$(git diff --name-only HEAD^ HEAD 2>/dev/null || echo "Dockerfile")
+          if echo "$CHANGED" | grep -qE "^(Dockerfile|requirements.*\.txt|pyproject\.toml|src/)"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Docker Buildx
+        if: steps.docker_changes.outputs.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
+        if: steps.docker_changes.outputs.changed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -129,9 +142,14 @@ jobs:
           load: true
 
       - name: Verify Docker image
+        if: steps.docker_changes.outputs.changed == 'true'
         run: |
           docker run --rm ${{ env.DOCKER_IMAGE }}:test python3 --version
           docker run --rm ${{ env.DOCKER_IMAGE }}:test python3 -c "import streamlit; print('Streamlit OK')"
+
+      - name: Skip (no Docker-related changes)
+        if: steps.docker_changes.outputs.changed == 'false'
+        run: echo "Skipping Docker build - no changes to Dockerfile, requirements.txt, pyproject.toml or src/"
 
   security:
     name: Security Scan

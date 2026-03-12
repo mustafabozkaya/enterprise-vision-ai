@@ -1,10 +1,9 @@
 # Deploy to HuggingFace Spaces
+# Trigger: manual only (workflow_dispatch)
+# Prerequisites: HF_TOKEN secret must be set in repo Settings > Secrets
 name: Deploy to HF Space
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:
