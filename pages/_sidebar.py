@@ -53,8 +53,16 @@ SIDEBAR_CSS = """
         background-color: #0d1117;
         border-right: 1px solid #30363d;
     }
-    [data-testid="stSidebarNav"] { display: none !important; }
-    .stSidebarUser { display: none !important; }
+    /* Hide ALL default Streamlit page navigation (all known selectors) */
+    [data-testid="stSidebarNav"],
+    [data-testid="stSidebarNavItems"],
+    [data-testid="stSidebarNavSeparator"],
+    [data-testid="stSidebarNavContainer"],
+    section[data-testid="stSidebarNav"],
+    div[data-testid="stSidebarNavContainer"],
+    .st-emotion-cache-j5r0tf,
+    .stSidebarUser,
+    header[data-testid="stHeader"] { display: none !important; }
     .sidebar-header {
         display: flex; align-items: center; gap: 12px;
         padding: 16px;

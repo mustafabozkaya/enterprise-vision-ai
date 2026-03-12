@@ -95,13 +95,16 @@ st.markdown(
         border-right: 1px solid #30363d;
     }
     
-    /* Hide Streamlit's default sidebar navigation */
-    [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    
-    /* Hide any legacy navigation */
-    .stSidebarUser {
+    /* Hide ALL default Streamlit page navigation (all known selectors) */
+    [data-testid="stSidebarNav"],
+    [data-testid="stSidebarNavItems"],
+    [data-testid="stSidebarNavSeparator"],
+    [data-testid="stSidebarNavContainer"],
+    section[data-testid="stSidebarNav"],
+    div[data-testid="stSidebarNavContainer"],
+    .st-emotion-cache-j5r0tf,
+    .stSidebarUser,
+    header[data-testid="stHeader"] {
         display: none !important;
     }
     
