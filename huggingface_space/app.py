@@ -46,19 +46,27 @@ try:
 except ImportError:
     _UTILS_AVAILABLE = False
 
-_MODEL_PATH = os.path.join(_ROOT, "yolo11s-seg.pt")
+_HF_MODEL_REPO = "Mustafaege/enterprise-vision-ai-models"
+_MODEL_FILENAME = "yolo11s-seg.pt"
 _model_cache: dict = {}
 
 
 def _get_model():
-    """Load YOLO model once, cache it."""
+    """Download model from HF Hub (cached) and load with YOLO."""
     if "model" not in _model_cache:
-        if _YOLO_AVAILABLE and os.path.exists(_MODEL_PATH):
-            try:
-                _model_cache["model"] = YOLO(_MODEL_PATH)
-            except Exception:
-                _model_cache["model"] = None
-        else:
+        if not _YOLO_AVAILABLE:
+            _model_cache["model"] = None
+            return None
+        try:
+            from huggingface_hub import hf_hub_download
+
+            model_path = hf_hub_download(
+                repo_id=_HF_MODEL_REPO,
+                filename=_MODEL_FILENAME,
+            )
+            _model_cache["model"] = YOLO(model_path)
+        except Exception as e:
+            print(f"Model yüklenemedi: {e}")
             _model_cache["model"] = None
     return _model_cache["model"]
 
