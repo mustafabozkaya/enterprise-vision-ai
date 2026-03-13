@@ -1,555 +1,258 @@
 """
 Enterprise Vision AI - HuggingFace Space Demo
-Gradio-based web application for industrial AI demos
-
-This Space demonstrates:
-1. Defect Detection - Surface defect detection using YOLO
-2. Ore Classification - Mineral ore classification and sorting
-
-Author: Enterprise Vision AI Team
-License: Apache 2.0
+Gradio-based industrial AI demo with defect detection and ore classification.
 """
 
 import os
-from datetime import datetime
-from functools import lru_cache
+import sys
 
 import cv2
 import gradio as gr
 import numpy as np
 from PIL import Image
 
-# Check for torch availability
+# Add project root to path so enterprise_vision_ai package is importable
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.dirname(_HERE)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+# Try importing YOLO
 try:
-    import torch
+    from ultralytics import YOLO
 
-    TORCH_AVAILABLE = True
+    _YOLO_AVAILABLE = True
 except ImportError:
-    TORCH_AVAILABLE = False
-    print("PyTorch not available, using CPU only")
+    _YOLO_AVAILABLE = False
 
-# -----------------------------------------------------------------------------
-# CONFIGURATION
-# -----------------------------------------------------------------------------
+# Try importing utils
+try:
+    from enterprise_vision_ai.utils.image_utils import preprocess_for_model
+    from enterprise_vision_ai.utils.metrics import (
+        calculate_anomaly_score,
+        calculate_metal_ratio,
+        calculate_ore_metrics,
+        get_diverter_recommendation,
+        get_maintenance_recommendation,
+        get_severity_level,
+    )
+    from enterprise_vision_ai.utils.visualization import (
+        draw_annotations,
+        get_defect_colors,
+        get_ore_class_colors,
+    )
 
-# Theme colors matching BAS Industrial AI
-THEME = {
-    "primary": "#00d4ff",
-    "secondary": "#0099cc",
-    "background": "#0e1117",
-    "surface": "#1a1d23",
-    "text": "#ffffff",
-    "accent": "#00ff88",
-}
+    _UTILS_AVAILABLE = True
+except ImportError:
+    _UTILS_AVAILABLE = False
 
-# Model configurations - Replace with your HuggingFace model IDs
-DEFECT_MODEL_ID = "bas-industriel/yolo-defect-detection"
-ORE_MODEL_ID = "bas-industriel/yolo-ore-classification"
-
-# Class names
-DEFECT_CLASSES = ["çizik", "çatlak", "delik", "ezilme", "yanık", "pas", "diğer"]
-
-ORE_CLASSES = ["manyetit", "kromit", "pirit", "kalkopirit", "atık", "düşük tenörlü"]
-
-# Global model cache
-_defect_model = None
-_ore_model = None
-
-# -----------------------------------------------------------------------------
-# MODEL LOADING
-# -----------------------------------------------------------------------------
+_MODEL_PATH = os.path.join(_ROOT, "yolo11s-seg.pt")
+_model_cache: dict = {}
 
 
-def get_device():
-    """Get the best available device."""
-    if TORCH_AVAILABLE and torch.cuda.is_available():
-        return "cuda"
-    return "cpu"
+def _get_model():
+    """Load YOLO model once, cache it."""
+    if "model" not in _model_cache:
+        if _YOLO_AVAILABLE and os.path.exists(_MODEL_PATH):
+            try:
+                _model_cache["model"] = YOLO(_MODEL_PATH)
+            except Exception:
+                _model_cache["model"] = None
+        else:
+            _model_cache["model"] = None
+    return _model_cache["model"]
 
 
-def load_defect_model():
-    """
-    Load defect detection model from HuggingFace Hub.
-    Uses global cache to avoid reloading.
-    """
-    global _defect_model
-
-    if _defect_model is not None:
-        return _defect_model, True
-
-    try:
-        from ultralytics import YOLO
-
-        # Try loading from HuggingFace Hub first
-        try:
-            model = YOLO(f"huggingface://{DEFECT_MODEL_ID}")
-        except Exception as e:
-            print(f"Could not load from HF Hub: {e}, using fallback")
-            # Fallback to base YOLO model for demo
-            model = YOLO("yolo11n-seg.pt")
-
-        _defect_model = model
-        return model, True
-    except Exception as e:
-        print(f"Error loading defect model: {e}")
-        return None, False
+def _pil_to_bgr(image: Image.Image) -> np.ndarray:
+    arr = np.array(image.convert("RGB"))
+    return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
 
 
-def load_ore_model():
-    """
-    Load ore classification model from HuggingFace Hub.
-    Uses global cache to avoid reloading.
-    """
-    global _ore_model
-
-    if _ore_model is not None:
-        return _ore_model, True
-
-    try:
-        from ultralytics import YOLO
-
-        # Try loading from HuggingFace Hub first
-        try:
-            model = YOLO(f"huggingface://{ORE_MODEL_ID}")
-        except Exception as e:
-            print(f"Could not load from HF Hub: {e}, using fallback")
-            # Fallback to base YOLO model for demo
-            model = YOLO("yolo11n-seg.pt")
-
-        # Set class names for ore classification
-        model.names = {i: name for i, name in enumerate(ORE_CLASSES)}
-
-        _ore_model = model
-        return model, True
-    except Exception as e:
-        print(f"Error loading ore model: {e}")
-        return None, False
+def _bgr_to_pil(image: np.ndarray) -> Image.Image:
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(rgb)
 
 
-# -----------------------------------------------------------------------------
-# INFERENCE FUNCTIONS
-# -----------------------------------------------------------------------------
-
-
-def preprocess_image(image: Image.Image, target_size: int = 640) -> np.ndarray:
-    """Preprocess image for model inference."""
-    # Convert to RGB if needed
-    if image.mode != "RGB":
-        image = image.convert("RGB")
-
-    # Resize while maintaining aspect ratio
-    img_array = np.array(image)
-    h, w = img_array.shape[:2]
-
-    # Calculate scaling
-    scale = target_size / max(h, w)
-    new_h, new_w = int(h * scale), int(w * scale)
-
-    # Resize
-    resized = cv2.resize(img_array, (new_w, new_h))
-
-    # Pad to square
-    padded = np.zeros((target_size, target_size, 3), dtype=np.uint8)
-    y_offset = (target_size - new_h) // 2
-    x_offset = (target_size - new_w) // 2
-    padded[y_offset : y_offset + new_h, x_offset : x_offset + new_w] = resized
-
-    return padded
-
-
-def run_defect_detection(image: Image.Image, confidence: float = 0.25):
+def run_defect_detection(image: Image.Image, conf: float) -> tuple:
     """
     Run defect detection on input image.
 
-    Args:
-        image: Input PIL Image
-        confidence: Confidence threshold for detections
-
     Returns:
-        Annotated image and detection results
+        (annotated_image: PIL.Image, results_markdown: str)
     """
     if image is None:
-        return None, "Lütfen bir görüntü yükleyiniz."
+        return None, "Görüntü yüklenmedi."
 
-    try:
-        # Load model
-        model, loaded = load_defect_model()
-        if not loaded or model is None:
-            return None, "Model yüklenemedi."
+    model = _get_model()
 
-        # Get device
-        device = get_device()
+    if model is None or not _UTILS_AVAILABLE:
+        return image, "⚠️ Model yüklenemedi — demo modu. Sonuç üretilemedi."
 
-        # Run inference
-        results = model.predict(image, conf=confidence, verbose=False, device=device)
+    image_bgr = _pil_to_bgr(image)
+    image_bgr = preprocess_for_model(image_bgr)
 
-        # Get result
-        result = results[0]
+    results = model(image_bgr, conf=conf)
+    annotated_bgr = draw_annotations(image_bgr, results, get_defect_colors())
+    annotated_pil = Image.fromarray(annotated_bgr)  # draw_annotations returns RGB
 
-        # Generate annotated image
-        annotated_img = result.plot()
+    score = calculate_anomaly_score(results)
+    severity = get_severity_level(score)
+    recommendation = get_maintenance_recommendation(score)
+    det_count = sum(len(r.boxes) for r in results)
 
-        # Parse detections
-        detections = []
-        if result.boxes is not None and len(result.boxes) > 0:
-            boxes = result.boxes.xyxy.cpu().numpy()
-            confs = result.boxes.conf.cpu().numpy()
-            classes = result.boxes.cls.cpu().numpy()
+    md = f"""**Tespit Sayısı:** {det_count}
+**Anomali Skoru:** {score:.0f}/100
+**Severity:** {severity.capitalize()}
+**Öneri:** {recommendation}"""
 
-            for box, conf, cls in zip(boxes, confs, classes):
-                cls_idx = int(cls)
-                cls_name = (
-                    DEFECT_CLASSES[cls_idx] if cls_idx < len(DEFECT_CLASSES) else f"sınıf_{cls_idx}"
-                )
-                detections.append(
-                    {"class": cls_name, "confidence": float(conf), "bbox": [float(x) for x in box]}
-                )
-
-        # Create results summary
-        device_str = "GPU (CUDA)" if device == "cuda" else "CPU"
-
-        summary = f"### 🔍 Algılama Sonuçları\n\n"
-        summary += f"- **Toplam Tespit:** {len(detections)}\n"
-        summary += f"- **Cihaz:** {device_str}\n\n"
-
-        if detections:
-            summary += "#### Tespit Edilen Defectler:\n\n"
-            for i, det in enumerate(detections, 1):
-                summary += f"{i}. **{det['class']}** - Güven: {det['confidence']:.2%}\n"
-        else:
-            summary += "Defect tespit edilmedi.\n"
-
-        return Image.fromarray(annotated_img), summary
-
-    except Exception as e:
-        return None, f"Hata oluştu: {str(e)}"
+    return annotated_pil, md
 
 
-def run_ore_classification(image: Image.Image, confidence: float = 0.25):
+def run_ore_classification(image: Image.Image, conf: float) -> tuple:
     """
     Run ore classification on input image.
 
-    Args:
-        image: Input PIL Image
-        confidence: Confidence threshold for detections
-
     Returns:
-        Annotated image and classification results
+        (annotated_image: PIL.Image, results_markdown: str)
     """
     if image is None:
-        return None, "Lütfen bir görüntü yükleyiniz."
+        return None, "Görüntü yüklenmedi."
 
-    try:
-        # Load model
-        model, loaded = load_ore_model()
-        if not loaded or model is None:
-            return None, "Model yüklenemedi."
+    model = _get_model()
 
-        # Get device
-        device = get_device()
+    if model is None or not _UTILS_AVAILABLE:
+        return image, "⚠️ Model yüklenemedi — demo modu. Sonuç üretilemedi."
 
-        # Run inference
-        results = model.predict(image, conf=confidence, verbose=False, device=device)
+    image_bgr = _pil_to_bgr(image)
+    image_bgr = preprocess_for_model(image_bgr)
 
-        # Get result
-        result = results[0]
+    results = model(image_bgr, conf=conf)
+    annotated_bgr = draw_annotations(image_bgr, results, get_ore_class_colors())
+    annotated_pil = Image.fromarray(annotated_bgr)  # draw_annotations returns RGB
 
-        # Generate annotated image
-        annotated_img = result.plot()
+    counts = calculate_ore_metrics(results)
+    metal_ratio = calculate_metal_ratio(counts)
+    diverter = get_diverter_recommendation(metal_ratio)
+    total = sum(counts.values())
+    dominant = max(counts, key=counts.get) if total > 0 else "—"
 
-        # Parse detections
-        detections = []
-        if result.boxes is not None and len(result.boxes) > 0:
-            boxes = result.boxes.xyxy.cpu().numpy()
-            confs = result.boxes.conf.cpu().numpy()
-            classes = result.boxes.cls.cpu().numpy()
+    counts_str = " | ".join(f"{k}: {v}" for k, v in counts.items())
+    md = f"""**Toplam Tespit:** {total}
+**Metal Oranı:** {metal_ratio:.1f}%
+**Dominant Sınıf:** {dominant}
+**Diverter Önerisi:** {diverter}
+**Dağılım:** {counts_str}"""
 
-            for box, conf, cls in zip(boxes, confs, classes):
-                cls_idx = int(cls)
-                cls_name = (
-                    ORE_CLASSES[cls_idx] if cls_idx < len(ORE_CLASSES) else f"sınıf_{cls_idx}"
-                )
-                detections.append(
-                    {"class": cls_name, "confidence": float(conf), "bbox": [float(x) for x in box]}
-                )
-
-        # Calculate metrics
-        class_counts = {}
-        for det in detections:
-            cls = det["class"]
-            class_counts[cls] = class_counts.get(cls, 0) + 1
-
-        # Create results summary
-        device_str = "GPU (CUDA)" if device == "cuda" else "CPU"
-
-        summary = f"### 💎 Sınıflandırma Sonuçları\n\n"
-        summary += f"- **Toplam Tespit:** {len(detections)}\n"
-        summary += f"- **Cihaz:** {device_str}\n\n"
-
-        if detections:
-            summary += "#### Tespit Edilen Cevherler:\n\n"
-            for i, det in enumerate(detections, 1):
-                summary += f"{i}. **{det['class']}** - Güven: {det['confidence']:.2%}\n"
-
-            summary += "\n#### Özet:\n\n"
-            for cls, count in class_counts.items():
-                pct = (count / len(detections)) * 100
-                summary += f"- {cls}: {count} adet ({pct:.1f}%)\n"
-        else:
-            summary += "Cevher tespit edilmedi.\n"
-
-        return Image.fromarray(annotated_img), summary
-
-    except Exception as e:
-        return None, f"Hata oluştu: {str(e)}"
+    return annotated_pil, md
 
 
-# -----------------------------------------------------------------------------
-# UI COMPONENTS
-# -----------------------------------------------------------------------------
+_HEADER_HTML = """
+<div style="text-align:center; padding:16px 0 8px;">
+  <h1 style="margin:0; font-size:1.8rem;">🏭 Enterprise Vision AI</h1>
+  <p style="color:#888; margin:4px 0 0;">Endüstriyel görüntü analizi — defekt tespiti &amp; cevher ön seçimi</p>
+</div>
+"""
 
+_API_DOCS = """
+### 📡 API Kullanımı
 
-def create_header():
-    """Create application header."""
-    return """
-    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #0e1117 0%, #1a1d23 100%); border-radius: 10px; margin-bottom: 20px;">
-        <h1 style="color: #00d4ff; margin: 0; font-size: 2.5em;">
-            🏭 Enterprise Vision AI
-        </h1>
-        <p style="color: #888; margin: 10px 0 0 0; font-size: 1.2em;">
-            Yapay Zeka Destekli Endüstriyel Görüntü Analizi
-        </p>
-        <div style="margin-top: 15px;">
-            <span style="background: #00ff88; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold;">
-                HuggingFace Space Demo
-            </span>
-        </div>
-    </div>
-    """
+Bu HuggingFace Space, Gradio API üzerinden programatik erişime izin verir.
 
+#### Python (gradio_client)
+```python
+from gradio_client import Client, handle_file
 
-def create_info_card(title: str, description: str, icon: str = "ℹ️"):
-    """Create information card."""
-    return f"""
-    <div style="background: #1a1d23; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 4px solid #00d4ff;">
-        <h3 style="margin: 0 0 10px 0; color: #00d4ff;">{icon} {title}</h3>
-        <p style="margin: 0; color: #ccc;">{description}</p>
-    </div>
-    """
+client = Client("https://<kullanici>-<space>.hf.space")
 
+# Defekt tespiti
+result = client.predict(
+    image=handle_file("my_image.jpg"),
+    conf=0.25,
+    api_name="/run_defect_detection"
+)
+annotated_img, results_md = result
 
-# -----------------------------------------------------------------------------
-# GRADIO INTERFACE
-# -----------------------------------------------------------------------------
+# Cevher ön seçimi
+result = client.predict(
+    image=handle_file("my_ore.jpg"),
+    conf=0.25,
+    api_name="/run_ore_classification"
+)
+```
 
+#### curl
+```bash
+curl -X POST https://<kullanici>-<space>.hf.space/run/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"data": ["<base64_image>", 0.25], "fn_index": 0}'
+```
 
-def create_defect_detection_tab():
-    """Create defect detection demo tab."""
-    with gr.Blocks(title="Defekt Tespiti") as tab:
-        gr.HTML(create_header())
+`fn_index` değerleri: `0` → Defekt Tespiti, `1` → Cevher Ön Seçimi
 
-        gr.Markdown("## 🔍 Defekt Tespiti")
-        gr.HTML(
-            create_info_card(
-                "Yüzey Kusuru Tespiti",
-                "Endüstriyel ürünlerdeki yüzey kusurlarını (çizik, çatlak, delik, pas vb.) "
-                "yapay zeka kullanarak tespit eden demo modülü. Görüntüyü yükleyin ve "
-                "YOLO tabanlı modelimizin sonuçlarını görün.",
-                "🔍",
+> **Not:** API erişimi için Space'in çalışır durumda olması gerekir. `demo.queue()` API erişimini etkinleştirir.
+"""
+
+# --- UI ---
+with gr.Blocks(theme=gr.themes.Base()) as demo:
+    gr.HTML(_HEADER_HTML)
+
+    with gr.Tabs():
+        with gr.Tab("🔍 Defekt Tespiti"):
+            gr.Markdown(
+                "Yüzey kusurlarını tespit eder, anomali skoru ve bakım önerisi üretir."
             )
-        )
+            with gr.Row():
+                with gr.Column():
+                    defect_img_input = gr.Image(type="pil", label="Görüntü Yükle")
+                    defect_conf = gr.Slider(
+                        0.1, 1.0, value=0.25, step=0.05, label="Güven Eşiği"
+                    )
+                    defect_btn = gr.Button("🔍 Analiz Et", variant="primary")
+                with gr.Column():
+                    defect_img_output = gr.Image(type="pil", label="Sonuç")
+                    defect_results_md = gr.Markdown()
 
-        with gr.Row():
-            with gr.Column(scale=1):
-                input_image = gr.Image(label="📤 Görüntü Yükle", type="pil", height=400)
-
-                confidence = gr.Slider(
-                    minimum=0.1,
-                    maximum=1.0,
-                    value=0.25,
-                    step=0.05,
-                    label="Güven Eşiği",
-                    info="Düşük değerler daha fazla tespit yapar",
-                )
-
-                detect_btn = gr.Button("🔬 Analiz Et", variant="primary", size="lg")
-
-            with gr.Column(scale=1):
-                output_image = gr.Image(label="📊 Sonuç", type="pil", height=400)
-
-                results_text = gr.Markdown("Sonuçlar burada görünecek", label="Algılama Detayları")
-
-        # Event handlers
-        detect_btn.click(
-            fn=run_defect_detection,
-            inputs=[input_image, confidence],
-            outputs=[output_image, results_text],
-        )
-
-    return tab
-
-
-def create_ore_classification_tab():
-    """Create ore classification demo tab."""
-    with gr.Blocks(title="Cevher Sınıflandırma") as tab:
-        gr.HTML(create_header())
-
-        gr.Markdown("## 💎 Cevher Ön Seçimi")
-        gr.HTML(
-            create_info_card(
-                "Maden Cevheri Sınıflandırma",
-                "Maden cevherlerini (manyetit, kromit, pirit vb.) sınıflandıran ve "
-                "ön seçim yapan yapay zeka sistemi. Madencilik süreçlerinde otomatik "
-                "ayrıştırma için kullanılır.",
-                "💎",
+            defect_btn.click(
+                fn=run_defect_detection,
+                inputs=[defect_img_input, defect_conf],
+                outputs=[defect_img_output, defect_results_md],
             )
-        )
 
-        with gr.Row():
-            with gr.Column(scale=1):
-                input_image = gr.Image(label="📤 Görüntü Yükle", type="pil", height=400)
+            gr.Examples(
+                examples=[["examples/defect_sample.jpg"]],
+                inputs=defect_img_input,
+                label="Örnek Görüntüler",
+            )
 
-                confidence = gr.Slider(
-                    minimum=0.1,
-                    maximum=1.0,
-                    value=0.25,
-                    step=0.05,
-                    label="Güven Eşiği",
-                    info="Düşük değerler daha fazla tespit yapar",
-                )
+        with gr.Tab("💎 Cevher Ön Seçimi"):
+            gr.Markdown(
+                "Maden cevherlerini sınıflandırır, metal oranı hesaplar ve diverter önerisi üretir."
+            )
+            with gr.Row():
+                with gr.Column():
+                    ore_img_input = gr.Image(type="pil", label="Görüntü Yükle")
+                    ore_conf = gr.Slider(
+                        0.1, 1.0, value=0.25, step=0.05, label="Güven Eşiği"
+                    )
+                    ore_btn = gr.Button("💎 Analiz Et", variant="primary")
+                with gr.Column():
+                    ore_img_output = gr.Image(type="pil", label="Sonuç")
+                    ore_results_md = gr.Markdown()
 
-                classify_btn = gr.Button("🔬 Sınıflandır", variant="primary", size="lg")
+            ore_btn.click(
+                fn=run_ore_classification,
+                inputs=[ore_img_input, ore_conf],
+                outputs=[ore_img_output, ore_results_md],
+            )
 
-            with gr.Column(scale=1):
-                output_image = gr.Image(label="📊 Sonuç", type="pil", height=400)
+            gr.Examples(
+                examples=[["examples/ore_sample.jpg"]],
+                inputs=ore_img_input,
+                label="Örnek Görüntüler",
+            )
 
-                results_text = gr.Markdown(
-                    "Sonuçlar burada görünecek", label="Sınıflandırma Detayları"
-                )
+    with gr.Accordion("📡 API Kullanımı", open=False):
+        gr.Markdown(_API_DOCS)
 
-        # Event handlers
-        classify_btn.click(
-            fn=run_ore_classification,
-            inputs=[input_image, confidence],
-            outputs=[output_image, results_text],
-        )
-
-    return tab
-
-
-def create_about_tab():
-    """Create about/info tab."""
-    with gr.Blocks(title="Hakkında") as tab:
-        gr.HTML(create_header())
-
-        gr.Markdown("## 📋 Proje Hakkında")
-
-        gr.Markdown("""
-        ### Enterprise Vision AI
-        
-        Endüstriyel yapay zeka çözümleri sunan bir platformdur. 
-        Ana fonksiyonları:
-        
-        - **Defekt Tespiti**: Ürün yüzeylerindeki kusurların otomatik tespiti
-        - **Cevher Ön Seçimi**: Madencilik süreçlerinde cevher sınıflandırma
-        
-        ### Teknoloji
-        
-        - YOLO (You Only Look Once) nesne tespit algoritması
-        - Ultralytics framework
-        - PyTorch backend
-        - Gradio web arayüzü
-        
-        ### HuggingFace Space
-        
-        Bu demo, HuggingFace Spaces platformunda barındırılmaktadır.
-        Modeller HuggingFace Hub'dan yüklenmektedir.
-        
-        ---
-        
-        **Not**: Bu bir demo uygulamasıdır. Gerçek model ağırlıkları HuggingFace Hub'a 
-        yüklendikten sonra otomatik olarak kullanılacaktır.
-        """)
-
-        gr.Markdown("""
-        ### 🤗 HuggingFace Hub Modelleri
-        
-        Bu Space'de kullanılan modeller:
-        
-        - [Defect Detection Model](https://huggingface.co/bas-industriel/yolo-defect-detection)
-        - [Ore Classification Model](https://huggingface.co/bas-industriel/yolo-ore-classification)
-        
-        ---
-        
-        *© 2024 Enterprise Vision AI - Tüm hakları saklıdır*
-        """)
-
-    return tab
-
-
-# -----------------------------------------------------------------------------
-# MAIN APPLICATION
-# -----------------------------------------------------------------------------
-
-
-def create_app():
-    """Create main Gradio application."""
-
-    # Custom CSS
-    custom_css = """
-    /* Theme Colors */
-    :root {
-        --primary: #00d4ff;
-        --secondary: #0099cc;
-        --accent: #00ff88;
-        --background: #0e1117;
-        --surface: #1a1d23;
-    }
-    
-    /* Button styles */
-    .primary-btn {
-        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
-        border: none !important;
-        border-radius: 8px !important;
-    }
-    
-    /* Card styles */
-    .card {
-        background: #1a1d23;
-        border-radius: 10px;
-        padding: 20px;
-    }
-    
-    /* Header gradient */
-    .header {
-        background: linear-gradient(135deg, #0e1117 0%, #1a1d23 100%);
-    }
-    """
-
-    # Create main interface
-    with gr.Blocks(title="Enterprise Vision AI", css=custom_css) as app:
-
-        # Create tabs
-        with gr.TabbedInterface(
-            tab_names=["🔍 Defekt Tespiti", "💎 Cevher Sınıflandırma", "ℹ️ Hakkında"],
-            tab_creates=[
-                create_defect_detection_tab,
-                create_ore_classification_tab,
-                create_about_tab,
-            ],
-        ) as tabs:
-            pass  # Tabs are created by the tabbed_interface
-
-    return app
-
-
-# -----------------------------------------------------------------------------
-# ENTRY POINT
-# -----------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    # Create and launch app
-    app = create_app()
-
-    # Launch with appropriate settings for HuggingFace Spaces
-    app.launch(server_name="0.0.0.0", server_port=7860, share=True, show_error=True)
+demo.queue()
+demo.launch()
