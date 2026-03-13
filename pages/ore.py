@@ -1,533 +1,150 @@
 """
-Enterprise Vision AI MVP - Cevher Ön Seçimi Modülü
+Enterprise Vision AI - Cevher Ön Seçimi Modülü
 Maden cevherlerinin sınıflandırılması ve ayrıştırılması
 """
-
-import os
-
-# Import utility functions
-import sys
-import tempfile
 
 import cv2
 import numpy as np
 import streamlit as st
-from PIL import Image
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pages._sidebar import render_sidebar
-from services.utils import (
+from enterprise_vision_ai.utils.image_utils import load_image, preprocess_for_model
+from enterprise_vision_ai.utils.metrics import (
     calculate_metal_ratio,
     calculate_ore_metrics,
     create_ore_dataframe,
-    draw_annotations,
     get_diverter_recommendation,
-    get_ore_class_colors,
-    resize_image,
 )
+from enterprise_vision_ai.utils.visualization import draw_annotations, get_ore_class_colors
+from pages._sidebar import render_sidebar
 
-# -----------------------------------------------------------------------------
-# MODEL YÜKLEME
-# -----------------------------------------------------------------------------
+MODEL_PATH = "yolo11s-seg.pt"
+ORE_CLASSES = {
+    "manyetit": "Demir içerikli manyetit cevheri",
+    "krom": "Krom cevheri",
+    "atık": "Değersiz atık materyal",
+    "düşük tenör": "Düşük metal içerikli cevher",
+}
 
 
 @st.cache_resource
-def load_model():
-    """
-    YOLO modelini yükler.
-    Model yoksa fallback döner.
-    """
-    import os
-
-    # Debug: List available files
-    print("=" * 50)
-    print("DEBUG: Ore Model Loading Started")
-    print(f"Current directory: {os.getcwd()}")
-
+def _load_model():
+    """YOLO modelini yükle. Başarısız olursa None döner (demo modu)."""
     try:
         from ultralytics import YOLO
 
-        # Model yükle
-        model_paths = ["yolo11s-seg.pt", "yolo11n-seg.pt"]
-        model = None
-
-        for model_path in model_paths:
-            try:
-                print(f"Trying to load: {model_path}")
-                if os.path.exists(model_path):
-                    model = YOLO(model_path)
-                    print(f"SUCCESS: Loaded {model_path}")
-                    break
-            except Exception as e:
-                print(f"Error loading {model_path}: {e}")
-
-        if model is None:
-            print("Using pretrained yolo11n-seg.pt as fallback")
-            model = YOLO("yolo11n-seg.pt")
-
-        # Sınıf isimlerini ayarla (demo için)
-        model.names = {0: "manyetit", 1: "krom", 2: "atık", 3: "düşük tenör"}
-
-        print("DEBUG: Ore model loaded successfully")
-        return model, True
-    except Exception as e:
-        print(f"DEBUG: Ore model loading failed: {e}")
-        st.warning(f"Model yüklenirken hata: {e}")
-        return None, False
-
-
-# -----------------------------------------------------------------------------
-# SAYFA KONFİGURASYONU
-# -----------------------------------------------------------------------------
-
-
-def set_page_config():
-    """Sayfa konfigürasyonunu ayarlar."""
-    st.set_page_config(page_title="Cevher Ön Seçimi - BAS AI MVP", page_icon="💎", layout="wide")
-
-
-# -----------------------------------------------------------------------------
-# GRAFİK FONKSİYONLARI
-# -----------------------------------------------------------------------------
-
-
-def create_bar_chart(counts: dict):
-    """
-    Bar chart oluşturur.
-
-    Args:
-        counts: Sınıf sayıları
-    """
-    import pandas as pd
-    import plotly.express as px
-
-    df = create_ore_dataframe(counts)
-
-    if df.empty or df["Adet"].sum() == 0:
-        st.info("Henüz tespit edilen cevher yok")
-        return
-
-    # Renkleri eşle
-    colors = get_ore_class_colors()
-    color_map = {
-        "manyetit": "rgb(220, 20, 60)",
-        "krom": "rgb(0, 255, 127)",
-        "atık": "rgb(128, 128, 128)",
-        "düşük tenör": "rgb(255, 165, 0)",
-    }
-
-    fig = px.bar(
-        df,
-        x="Sınıf",
-        y="Adet",
-        color="Sınıf",
-        color_discrete_map=color_map,
-        title="Cevher Sınıf Dağılımı",
-    )
-
-    fig.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color="white"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def create_pie_chart(counts: dict):
-    """
-    Pie chart oluşturur.
-
-    Args:
-        counts: Sınıf sayıları
-    """
-    import pandas as pd
-    import plotly.express as px
-
-    df = create_ore_dataframe(counts)
-
-    if df.empty or df["Adet"].sum() == 0:
-        return
-
-    colors = {
-        "manyetit": "rgb(220, 20, 60)",
-        "krom": "rgb(0, 255, 127)",
-        "atık": "rgb(128, 128, 128)",
-        "düşük tenör": "rgb(255, 165, 0)",
-    }
-
-    fig = px.pie(
-        df,
-        values="Adet",
-        names="Sınıf",
-        color="Sınıf",
-        color_discrete_map=colors,
-        title="Cevher Dağılımı (%)",
-    )
-
-    fig.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color="white"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-# -----------------------------------------------------------------------------
-# ANA FONKSİYONLAR
-# -----------------------------------------------------------------------------
+        return YOLO(MODEL_PATH)
+    except Exception:
+        return None
 
 
 def render():
-    """Cevher Ön Seçimi sayfasını render eder."""
+    # Note: set_page_config is NOT called here (same reason as defect.py).
 
-    set_page_config()
+    # --- Sidebar ---
+    render_sidebar(active_page="ore")
+    with st.sidebar:
+        st.markdown("### ⚙️ Ayarlar")
+        confidence = st.slider("Güven Eşiği", 0.1, 1.0, 0.25, 0.05)
 
-    # Modeli yükle
-    model, model_loaded = load_model()
+        model = _load_model()
+        status_color = "#238636" if model is not None else "#da3633"
+        status_text = "Yüklendi" if model is not None else "Demo Modu"
+        st.markdown(
+            f'<div style="border-left:3px solid {status_color}; padding:8px 12px;'
+            f' margin-top:8px; border-radius:4px; background:#161b22;">'
+            f"<strong>Model Durumu</strong><br>"
+            f'<span style="color:{status_color};">● {status_text}</span></div>',
+            unsafe_allow_html=True,
+        )
 
-    # CSS
-    st.markdown(
-        """
-    <style>
-        .ore-card {
-            background-color: #1e2330;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 5px;
-        }
-        .diverter-advance {
-            background-color: #00ff00;
-            color: black;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .diverter-hold {
-            background-color: #ffa500;
-            color: black;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .diverter-waste {
-            background-color: #ff0000;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .sidebar-divider { height: 1px; background-color: #30363d; margin: 16px 0; }
-        .sidebar-section-title {
-            font-size: 12px; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 1px; color: #8b949e; margin: 20px 0 10px 0; padding: 0 12px;
-        }
-    </style>
-    """,
-        unsafe_allow_html=True,
+        st.markdown("### 🗂️ Sınıflar")
+        classes_html = "".join(
+            f'<div style="padding:4px 0; border-bottom:1px solid #21262d;">'
+            f"<strong>{cls}</strong><br>"
+            f'<span style="color:#8b949e; font-size:12px;">{desc}</span></div>'
+            for cls, desc in ORE_CLASSES.items()
+        )
+        st.markdown(
+            f'<div style="border-left:3px solid #1f6feb; padding:8px 12px;'
+            f' border-radius:4px; background:#161b22;">{classes_html}</div>',
+            unsafe_allow_html=True,
+        )
+
+    # --- Başlık ---
+    st.title("💎 Cevher Ön Seçimi")
+    st.markdown("Maden cevherlerini sınıflandırır, metal oranı hesaplar ve diverter yönü önerir.")
+
+    # --- Yükleme ---
+    uploaded_file = st.file_uploader(
+        "Görüntü Yükle", type=["jpg", "jpeg", "png"], label_visibility="collapsed"
     )
 
-    # Başlık
-    st.title("💎 Cevher Ön Seçimi")
-    st.markdown("### Maden cevheri sınıflandırma ve ayrıştırma sistemi")
+    # --- Analiz Et butonu ---
+    _, btn_col, _ = st.columns([1, 2, 1])
+    analyze_clicked = btn_col.button("💎 Analiz Et", type="primary", use_container_width=True)
 
-    st.markdown("---")
+    # --- Boş durum ---
+    if uploaded_file is None:
+        st.info("Analiz için bir cevher görüntüsü yükleyin (JPG, JPEG, PNG).")
+        st.markdown("**Metal Oranı Formülü:** `(manyetit + krom) / toplam_tespit × 100`")
+        return
 
-    # Shared sidebar (branding + navigation + system status)
-    render_sidebar(active_page="ore")
+    # --- Inference (buton tıklandığında) ---
+    if analyze_clicked:
+        image_bgr = load_image(uploaded_file)
+        if image_bgr is None:
+            st.error("Görüntü yüklenemedi. Lütfen geçerli bir dosya seçin.")
+            return
 
-    # Page-specific sidebar controls
-    with st.sidebar:
-        st.markdown('<div class="sidebar-section-title">Ayarlar</div>', unsafe_allow_html=True)
+        image_bgr = preprocess_for_model(image_bgr)
+        model = _load_model()
 
-        confidence = st.slider("Güven Eşiği", min_value=0.1, max_value=1.0, value=0.25, step=0.05)
-
-        show_masks = st.checkbox("Maskeleri Göster", value=True)
-        show_boxes = st.checkbox("Bounding Box'ları Göster", value=True)
-
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-section-title">Model Durumu</div>', unsafe_allow_html=True)
-
-        model_status = "Yüklü" if model_loaded else "Demo Mod"
-        model_color = "#3fb950" if model_loaded else "#d29922"
-        st.markdown(
-            f"""
-        <div class="model-status-card">
-            <div class="title">Cevher Sınıflandırma Modeli</div>
-            <div class="status" style="color: {model_color};">
-                <span class="status-dot" style="background-color: {model_color};"></span>
-                {model_status}
-            </div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-section-title">Sınıflar</div>', unsafe_allow_html=True)
-        st.markdown(
-            """
-        <div class="model-status-card">
-            <div style="font-size:13px; color:#c9d1d9; line-height:1.8;">
-                🔴 Manyetit (Demir cevheri)<br>
-                🟢 Krom (Krom cevheri)<br>
-                ⚫ Atık (Waste)<br>
-                🟠 Düşük Tenör (Low grade)
-            </div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
-    # Ana içerik
-    col1, col2 = st.columns([2, 1])
-
-    with col1:
-        # Giriş seçenekleri
-        input_method = st.radio(
-            "Giriş Yöntemi:", ["📁 Görüntü Yükle", "🎬 Video Yükle"], horizontal=True
-        )
-
-        image = None
-        video_file = None
-
-        if input_method == "📁 Görüntü Yükle":
-            uploaded_file = st.file_uploader(
-                "Cevher görüntüsü seçin (JPG, PNG)", type=["jpg", "jpeg", "png"]
-            )
-
-            if uploaded_file:
-                image = Image.open(uploaded_file)
-                image = np.array(image)
-
-                # RGB'den BGR'ye çevir
-                if len(image.shape) == 3 and image.shape[2] == 3:
-                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-                # Boyutlandır
-                image = resize_image(image)
-
-        elif input_method == "🎬 Video Yükle":
-            uploaded_video = st.file_uploader("Video seçin (MP4, AVI)", type=["mp4", "avi", "mov"])
-
-            if uploaded_video:
-                # Geçici dosyaya kaydet
-                temp_dir = tempfile.gettempdir()
-                temp_path = os.path.join(temp_dir, uploaded_video.name)
-
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_video.read())
-
-                video_file = temp_path
-
-    with col2:
-        # Sonuçlar paneli
-        st.markdown("### 📊 Analiz Sonuçları")
-
-        # Placeholder'lar
-        counts_placeholder = st.empty()
-        metal_ratio_placeholder = st.empty()
-        diverter_placeholder = st.empty()
-
-    # -------------------------------------------------------------------------
-    # GÖRÜNTÜ İŞLEME
-    # -------------------------------------------------------------------------
-
-    result_image = None
-    counts = {"manyetit": 0, "krom": 0, "atık": 0, "düşük tenör": 0}
-
-    if image is not None:
-        # Inference
-        if model and model_loaded:
-            results = model.predict(image, conf=confidence, verbose=False)
+        if model is not None:
+            results = model(image_bgr, conf=confidence)
+            annotated = draw_annotations(image_bgr, results, get_ore_class_colors())
         else:
-            # Demo mod
-            results = []
+            results = None
+            annotated = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+            st.warning("⚠️ Model yüklenemedi — demo modu. Orijinal görüntü gösteriliyor.")
 
-        # Cevher metriklerini hesapla
-        counts = calculate_ore_metrics(results)
+        counts = (
+            calculate_ore_metrics(results)
+            if results
+            else {"manyetit": 0, "krom": 0, "atık": 0, "düşük tenör": 0}
+        )
         metal_ratio = calculate_metal_ratio(counts)
+        diverter = get_diverter_recommendation(metal_ratio)
+        total_count = sum(counts.values())
+        dominant = max(counts, key=counts.get) if total_count > 0 else "—"
 
-        # Görüntüyü çiz
-        if model and model_loaded and results:
-            ore_colors = get_ore_class_colors()
-            result_image = draw_annotations(
-                image.copy(),
-                results,
-                ore_colors,
-                show_labels=show_boxes,
-                show_confidence=show_boxes,
-            )
-        else:
-            # Demo mod
-            result_image = image.copy()
-            if len(result_image.shape) == 3:
-                result_image = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)
-
-        # Görüntüyü göster
-        st.image(result_image, caption="Tespit Edilen Cevherler", use_column_width=True)
-
-        # Grafikler
-        st.markdown("### 📈 Cevher Dağılımı")
-
-        chart_col1, chart_col2 = st.columns(2)
-
-        with chart_col1:
-            create_bar_chart(counts)
-
-        with chart_col2:
-            create_pie_chart(counts)
-
-        # Metrikleri göster
-        with counts_placeholder:
-            st.markdown("#### Sınıf Detayları")
-
-            col_a, col_b = st.columns(2)
-
-            with col_a:
-                st.metric("Manyetit", counts.get("manyetit", 0))
-                st.metric("Krom", counts.get("krom", 0))
-
-            with col_b:
-                st.metric("Atık", counts.get("atık", 0))
-                st.metric("Düşük Tenör", counts.get("düşük tenör", 0))
-
-        with metal_ratio_placeholder:
-            total = sum(counts.values())
-            st.metric("Metal Oranı", f"{metal_ratio:.1f}%", delta=f"Toplam: {total} adet")
-
-        # Diverter önerisi
-        with diverter_placeholder:
-            recommendation = get_diverter_recommendation(metal_ratio)
-
-            if "İLERİ" in recommendation:
-                st.markdown(
-                    f'<div class="diverter-advance">{recommendation}</div>', unsafe_allow_html=True
-                )
-            elif "KONTROL" in recommendation:
-                st.markdown(
-                    f'<div class="diverter-hold">{recommendation}</div>', unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f'<div class="diverter-waste">{recommendation}</div>', unsafe_allow_html=True
-                )
-
-    # -------------------------------------------------------------------------
-    # VİDEO İŞLEME
-    # -------------------------------------------------------------------------
-
-    elif video_file:
-        st.video(video_file)
-
-        # Video işleme açıklaması
-        st.info("""
-        🎬 Video işleme özelliği aktif.
-        
-        Gerçek zamanlı işleme için uygulamayı localde çalıştırın.
-        Video frame'leri analiz edilerek cevher sınıfları tespit edilir.
-        """)
-
-        # Örnek veri
-        st.markdown("### 📈 Örnek Metrikler")
-
-        # Örnek veri oluştur
-        np.random.seed(42)
-        n_frames = 30
-
-        # Rastgele cevher dağılımı
-        example_counts = {
-            "manyetit": np.random.randint(5, 20),
-            "krom": np.random.randint(3, 15),
-            "atık": np.random.randint(10, 30),
-            "düşük tenör": np.random.randint(2, 10),
+        st.session_state["ore_result"] = {
+            "img": annotated,
+            "counts": counts,
+            "metal_ratio": metal_ratio,
+            "diverter": diverter,
+            "total": total_count,
+            "dominant": dominant,
         }
 
-        metal_ratio = calculate_metal_ratio(example_counts)
+    # --- Sonuçları göster ---
+    if "ore_result" in st.session_state:
+        res = st.session_state["ore_result"]
 
-        # Grafikler
-        chart_col1, chart_col2 = st.columns(2)
+        st.image(res["img"], use_column_width=True)
 
-        with chart_col1:
-            create_bar_chart(example_counts)
-
-        with chart_col2:
-            create_pie_chart(example_counts)
-
-        # Metrikler
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("Metal Oranı", f"{metal_ratio:.1f}%")
-
-        with col2:
-            total = sum(example_counts.values())
-            st.metric("Toplam Tespit", f"{total} adet")
-
-        # Diverter önerisi
-        recommendation = get_diverter_recommendation(metal_ratio)
-
-        if "İLERİ" in recommendation:
-            st.markdown(
-                f'<div class="diverter-advance">{recommendation}</div>', unsafe_allow_html=True
-            )
-        elif "KONTROL" in recommendation:
-            st.markdown(
-                f'<div class="diverter-hold">{recommendation}</div>', unsafe_allow_html=True
-            )
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Toplam Tespit", res["total"])
+        c2.metric("Metal Oranı", f"{res['metal_ratio']:.1f}%")
+        if res["metal_ratio"] >= 60:
+            diverter_short = "İleri"
+        elif res["metal_ratio"] >= 30:
+            diverter_short = "Kontrol"
         else:
-            st.markdown(
-                f'<div class="diverter-waste">{recommendation}</div>', unsafe_allow_html=True
-            )
+            diverter_short = "Atık"
+        c3.metric("Diverter Önerisi", diverter_short)
+        c4.metric("Dominant Sınıf", res["dominant"].capitalize())
 
-    # -------------------------------------------------------------------------
-    # BOŞ DURUM
-    # -------------------------------------------------------------------------
+        st.info(res["diverter"])
 
-    else:
-        # Demo gösterim
-        st.info("👆 Lütfen bir cevher görüntüsü veya video yükleyin")
-
-        # Örnek kullanım
-        st.markdown("### 📖 Kullanım Talimatları")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("""
-            #### Desteklenen Formatlar
-            - **Görüntü:** JPG, PNG, JPEG
-            - **Video:** MP4, AVI, MOV
-            
-            #### Tespit Edilen Cevherler
-            - 🔴 **Manyetit:** Demir cevheri (Fe₃O₄)
-            - 🟢 **Krom:** Krom cevheri (Cr₂O₃)
-            - ⚫ **Atık:** Ayrıştırılan atık malzeme
-            - 🟠 **Düşük Tenör:** Düşük metal içerikli
-            """)
-
-        with col2:
-            st.markdown("""
-            #### Metal Oranı Hesaplama
-            ```
-            Metal Oranı = (Manyetit + Krom) / Toplam * 100
-            ```
-            
-            #### Diverter Önerileri
-            - ⬆️ **İleri İşleme:** Metal oranı ≥ %60
-            - ⏸️ **Kontrol:** Metal oranı %30-60
-            - ⬇️ **Atık:** Metal oranı < %30
-            
-            #### Model Bilgisi
-            - **Model:** YOLO11 Segmentation
-            - **Hız:** ~30 FPS
-            - **Doğruluk:** %92+
-            """)
-
-
-# -----------------------------------------------------------------------------
-# MAIN
-# -----------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    render()
+        df = create_ore_dataframe(res["counts"])
+        st.bar_chart(df.set_index("Class")["Count"])
