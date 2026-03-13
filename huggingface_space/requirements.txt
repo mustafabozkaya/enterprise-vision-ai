@@ -1,16 +1,6 @@
-# Enterprise Vision AI - HuggingFace Space Requirements
-
-# UI
 gradio>=6.9.0
-
-# Vision inference
 ultralytics>=8.0.0
 opencv-python-headless>=4.8.0
 pillow>=10.0.0
 numpy>=1.24.0
-
-# Model download
 huggingface_hub>=0.20.0
-
-# Utilities
-tqdm>=4.65.0
