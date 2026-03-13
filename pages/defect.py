@@ -1,362 +1,147 @@
 """
-Enterprise Vision AI MVP - Defekt Tespiti Modülü
+Enterprise Vision AI - Defekt Tespiti Modülü
 Yüzey kusurlarının tespiti ve analizi
 """
-
-import os
-
-# Import utility functions
-import sys
-import time
-from datetime import datetime
 
 import cv2
 import numpy as np
 import streamlit as st
-from PIL import Image
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pages._sidebar import render_sidebar
-from services.utils import (
+from enterprise_vision_ai.utils.image_utils import load_image, preprocess_for_model
+from enterprise_vision_ai.utils.metrics import (
     calculate_anomaly_score,
     create_metrics_dataframe,
-    draw_annotations,
-    get_defect_colors,
     get_maintenance_recommendation,
     get_severity_level,
-    resize_image,
 )
+from enterprise_vision_ai.utils.visualization import draw_annotations, get_defect_colors
+from pages._sidebar import render_sidebar
 
-# -----------------------------------------------------------------------------
-# MODEL YÜKLEME
-# -----------------------------------------------------------------------------
+MODEL_PATH = "yolo11s-seg.pt"
+DEFECT_CLASSES = ["çatlak", "çizik", "delik", "leke", "deformasyon"]
 
 
 @st.cache_resource
-def load_model():
-    """
-    YOLO modelini yükler.
-    Model yoksa dummy mod döner.
-    """
-    import os
-
-    # Debug: List available files in current directory
-    print("=" * 50)
-    print("DEBUG: Model Loading Started")
-    print(f"Current directory: {os.getcwd()}")
-    print(f"Files in directory: {os.listdir('.')}")
-
+def _load_model():
+    """YOLO modelini yükle. Başarısız olursa None döner (demo modu)."""
     try:
         from ultralytics import YOLO
 
-        # Model yükle (fallback to yolo11n if custom model not found)
-        model_paths = ["yolo26-seg.pt", "yolo11s-seg.pt", "yolo11n-seg.pt"]
-        model = None
-
-        for model_path in model_paths:
-            try:
-                print(f"Trying to load: {model_path}")
-                if os.path.exists(model_path):
-                    model = YOLO(model_path)
-                    print(f"SUCCESS: Loaded {model_path}")
-                    break
-                else:
-                    print(f"Model file not found: {model_path}")
-            except Exception as e:
-                print(f"Error loading {model_path}: {e}")
-
-        if model is None:
-            # Use pretrained model as last resort
-            print("Using pretrained yolo11n-seg.pt as fallback")
-            model = YOLO("yolo11n-seg.pt")
-
-        print("DEBUG: Model loaded successfully")
-        return model, True
-    except Exception as e:
-        print(f"DEBUG: Model loading failed: {e}")
-        st.warning(f"Model yüklenirken hata: {e}")
-        return None, False
-
-
-# -----------------------------------------------------------------------------
-# SAYFA KONFİGURASYONU
-# -----------------------------------------------------------------------------
-
-
-def set_page_config():
-    """Sayfa konfigürasyonunu ayarlar."""
-    st.set_page_config(page_title="Defekt Tespiti - BAS AI MVP", page_icon="🔍", layout="wide")
-
-
-# -----------------------------------------------------------------------------
-# ANA FONKSİYONLAR
-# -----------------------------------------------------------------------------
+        return YOLO(MODEL_PATH)
+    except Exception:
+        return None
 
 
 def render():
-    """Defekt Tespiti sayfasını render eder."""
+    # Note: set_page_config is NOT called here.
+    # Sub-pages in Streamlit MPA inherit config from app.py.
+    # Calling set_page_config inside render() imported by a wrapper
+    # can raise StreamlitAPIException in some Streamlit versions.
 
-    set_page_config()
-
-    # Modeli yükle
-    model, model_loaded = load_model()
-
-    # CSS
-    st.markdown(
-        """
-    <style>
-        .metric-card {
-            background-color: #1e2330;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-        }
-        .severity-low { color: #00ff00; }
-        .severity-medium { color: #ffa500; }
-        .severity-high { color: #ff0000; }
-        .sidebar-divider { height: 1px; background-color: #30363d; margin: 16px 0; }
-        .sidebar-section-title {
-            font-size: 12px; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 1px; color: #8b949e; margin: 20px 0 10px 0; padding: 0 12px;
-        }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
-
-    # Başlık
-    st.title("🔍 Defekt Tespiti")
-    st.markdown("### Endüstriyel yüzey kusuru tespit sistemi")
-
-    st.markdown("---")
-
-    # Shared sidebar (branding + navigation + system status)
+    # --- Sidebar ---
     render_sidebar(active_page="defect")
-
-    # Page-specific sidebar controls
     with st.sidebar:
-        st.markdown('<div class="sidebar-section-title">Ayarlar</div>', unsafe_allow_html=True)
+        st.markdown("### ⚙️ Ayarlar")
+        confidence = st.slider("Güven Eşiği", 0.1, 1.0, 0.25, 0.05)
+        show_masks = st.checkbox("Segmentasyon Maskeleri", value=True)
+        show_boxes = st.checkbox("Bounding Box", value=True)
 
-        confidence = st.slider("Güven Eşiği", min_value=0.1, max_value=1.0, value=0.25, step=0.05)
-
-        show_masks = st.checkbox("Maskeleri Göster", value=True)
-        show_boxes = st.checkbox("Bounding Box'ları Göster", value=True)
-
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-section-title">Model Durumu</div>', unsafe_allow_html=True)
-
-        model_status = "Yüklü" if model_loaded else "Demo Mod"
-        model_color = "#3fb950" if model_loaded else "#d29922"
+        model = _load_model()
+        status_color = "#238636" if model is not None else "#da3633"
+        status_text = "Yüklendi" if model is not None else "Demo Modu"
         st.markdown(
-            f"""
-        <div class="model-status-card">
-            <div class="title">Defekt Tespiti Modeli</div>
-            <div class="status" style="color: {model_color};">
-                <span class="status-dot" style="background-color: {model_color};"></span>
-                {model_status}
-            </div>
-        </div>
-        """,
+            f'<div style="border-left:3px solid {status_color}; padding:8px 12px;'
+            f' margin-top:8px; border-radius:4px; background:#161b22;">'
+            f"<strong>Model Durumu</strong><br>"
+            f'<span style="color:{status_color};">● {status_text}</span></div>',
             unsafe_allow_html=True,
         )
 
-    # Ana içerik
-    col1, col2 = st.columns([2, 1])
+    # --- Başlık ---
+    st.title("🔍 Defekt Tespiti")
+    st.markdown("Endüstriyel yüzey kusurlarını tespit eder ve anomali skoru hesaplar.")
 
-    with col1:
-        # Giriş seçenekleri
-        input_method = st.radio(
-            "Giriş Yöntemi:", ["📁 Görüntü Yükle", "🎬 Video Yükle"], horizontal=True
-        )
+    # --- Yükleme ---
+    uploaded_file = st.file_uploader(
+        "Görüntü Yükle", type=["jpg", "jpeg", "png"], label_visibility="collapsed"
+    )
 
-        image = None
-        video_file = None
+    # --- Analiz Et butonu ---
+    _, btn_col, _ = st.columns([1, 2, 1])
+    analyze_clicked = btn_col.button("🔍 Analiz Et", type="primary", use_container_width=True)
 
-        if input_method == "📁 Görüntü Yükle":
-            uploaded_file = st.file_uploader(
-                "Görüntü seçin (JPG, PNG)", type=["jpg", "jpeg", "png"]
-            )
+    # --- Boş durum ---
+    if uploaded_file is None:
+        st.info("JPG, JPEG veya PNG formatında bir görüntü yükleyin.")
+        st.markdown("**Tespit Edilen Sınıflar:** " + " • ".join(DEFECT_CLASSES))
+        return
 
-            if uploaded_file:
-                image = Image.open(uploaded_file)
-                image = np.array(image)
+    # --- Inference (buton tıklandığında) ---
+    if analyze_clicked:
+        image_bgr = load_image(uploaded_file)
+        if image_bgr is None:
+            st.error("Görüntü yüklenemedi. Lütfen geçerli bir dosya seçin.")
+            return
 
-                # RGB'den BGR'ye çevir
-                if len(image.shape) == 3 and image.shape[2] == 3:
-                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        image_bgr = preprocess_for_model(image_bgr)
+        model = _load_model()
 
-                # Boyutlandır
-                image = resize_image(image)
-
-        elif input_method == "🎬 Video Yükle":
-            uploaded_video = st.file_uploader("Video seçin (MP4, AVI)", type=["mp4", "avi", "mov"])
-
-            if uploaded_video:
-                # Geçici dosyaya kaydet
-                import tempfile
-
-                temp_dir = tempfile.gettempdir()
-                temp_path = os.path.join(temp_dir, uploaded_video.name)
-
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_video.read())
-
-                video_file = temp_path
-
-    with col2:
-        # Sonuçlar paneli
-        st.markdown("### 📊 Analiz Sonuçları")
-
-        # Metrikler için placeholder
-        score_placeholder = st.empty()
-        severity_placeholder = st.empty()
-        recommendation_placeholder = st.empty()
-
-    # -------------------------------------------------------------------------
-    # GÖRÜNTÜ İŞLEME
-    # -------------------------------------------------------------------------
-
-    result_image = None
-    anomaly_score = 0.0
-
-    if image is not None:
-        # Inference
-        if model and model_loaded:
-            results = model.predict(image, conf=confidence, verbose=False)
+        if model is not None:
+            results = model(image_bgr, conf=confidence)
+            annotated = draw_annotations(image_bgr, results, get_defect_colors())
         else:
-            # Demo mod - dummy sonuç
-            results = []
+            results = None
+            annotated = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+            st.warning("⚠️ Model yüklenemedi — demo modu. Orijinal görüntü gösteriliyor.")
 
-        # Anomali skoru hesapla
-        anomaly_score = calculate_anomaly_score(results)
-        severity = get_severity_level(anomaly_score)
+        score = calculate_anomaly_score(results) if results else 0.0
+        severity = get_severity_level(score)
+        recommendation = get_maintenance_recommendation(score)
+        det_count = sum(len(r.boxes) for r in results) if results else 0
 
-        # Görüntüyü çiz
-        if model and model_loaded and results:
-            defect_colors = get_defect_colors()
-            result_image = draw_annotations(
-                image.copy(),
-                results,
-                defect_colors,
-                show_labels=show_boxes,
-                show_confidence=show_boxes,
-            )
+        rows = []
+        if results:
+            for r in results:
+                if r.boxes is not None:
+                    for box in r.boxes.data.cpu().numpy():
+                        x1, y1, x2, y2, conf_val, cls_id = box
+                        class_name = r.names.get(int(cls_id), f"cls_{int(cls_id)}")
+                        rows.append(
+                            {
+                                "Sınıf": class_name,
+                                "Güven": f"{conf_val:.2f}",
+                                "Bbox": f"({int(x1)},{int(y1)},{int(x2)},{int(y2)})",
+                            }
+                        )
+
+        st.session_state["defect_result"] = {
+            "img": annotated,
+            "score": score,
+            "severity": severity,
+            "recommendation": recommendation,
+            "count": det_count,
+            "rows": rows,
+        }
+
+    # --- Sonuçları göster ---
+    if "defect_result" in st.session_state:
+        res = st.session_state["defect_result"]
+
+        st.image(res["img"], use_column_width=True)
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Tespit Sayısı", res["count"])
+        c2.metric("Anomali Skoru", f"{res['score']:.0f}/100")
+        c3.metric("Severity", res["severity"].capitalize())
+        if res["score"] >= 85:
+            oneri = "Acil"
+        elif res["score"] >= 30:
+            oneri = "Yakın Bakım"
         else:
-            # Demo mod
-            result_image = image.copy()
-            if len(result_image.shape) == 3:
-                result_image = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)
+            oneri = "Rutin"
+        c4.metric("Öneri", oneri)
 
-        # Görüntüyü göster
-        st.image(result_image, caption="Tespit Edilen Defektler", use_column_width=True)
-
-        # Metrikleri göster
-        with score_placeholder:
-            st.metric("Anomali Skoru", f"{anomaly_score:.1f}/100")
-
-        with severity_placeholder:
-            severity_color = {"düşük": "🟢", "orta": "🟠", "yüksek": "🔴"}
-            st.markdown(f"**Severity:** {severity_color.get(severity, '⚪')} {severity.upper()}")
-
-        with recommendation_placeholder:
-            recommendation = get_maintenance_recommendation(anomaly_score)
-            st.info(recommendation)
-
-    # -------------------------------------------------------------------------
-    # VİDEO İŞLEME
-    # -------------------------------------------------------------------------
-
-    elif video_file:
-        st.video(video_file)
-
-        # Video işleme açıklaması
-        st.info("""
-        🎬 Video işleme özelliği aktif.
-        
-        Gerçek zamanlı işleme için uygulamayı localde çalıştırın.
-        Video frame'leri analiz edilerek anomali skorları hesaplanır.
-        """)
-
-        # Örnek metrikler
-        st.markdown("### 📈 Örnek Metrikler")
-
-        # Trend grafiği için veri
-        import pandas as pd
-
-        # Örnek veri
-        np.random.seed(42)
-        n_frames = 30
-        timestamps = pd.date_range(start="now", periods=n_frames, freq="1s")
-        scores = np.random.uniform(20, 60, n_frames)
-        scores = np.cumsum(np.random.randn(n_frames) * 5 + 2)
-        scores = np.clip(scores, 0, 100)
-
-        df = pd.DataFrame({"Zaman": timestamps, "Anomali Skoru": scores})
-
-        # Line chart
-        st.line_chart(df.set_index("Zaman"))
-
-        # Ortalama skor
-        avg_score = np.mean(scores)
-        severity = get_severity_level(avg_score)
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric("Ortalama Skor", f"{avg_score:.1f}")
-        with col2:
-            st.metric("Min Skor", f"{np.min(scores):.1f}")
-        with col3:
-            st.metric("Max Skor", f"{np.max(scores):.1f}")
-
-        # Öneri
-        recommendation = get_maintenance_recommendation(avg_score)
-        st.info(recommendation)
-
-    # -------------------------------------------------------------------------
-    # BOŞ DURUM
-    # -------------------------------------------------------------------------
-
-    else:
-        # Demo gösterim
-        st.info("👆 Lütfen bir görüntü veya video yükleyin")
-
-        # Örnek kullanım
-        st.markdown("### 📖 Kullanım Talimatları")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("""
-            #### Desteklenen Formatlar
-            - **Görüntü:** JPG, PNG, JPEG
-            - **Video:** MP4, AVI, MOV
-            
-            #### Tespit Edilen Defektler
-            - 🔴 Çatlak (Crack)
-            - 🟡 Çizik (Scratch)
-            - 🟠 Delik (Hole)
-            - 🟣 Leke (Stain)
-            - 🔵 Deformasyon
-            """)
-
-        with col2:
-            st.markdown("""
-            #### Severity Seviyeleri
-            - 🟢 **Düşük:** 0-30 skor
-            - 🟠 **Orta:** 30-70 skor
-            - 🔴 **Yüksek:** 70-100 skor
-            
-            #### Model Bilgisi
-            - **Model:** YOLO11 Segmentation
-            - **Hız:** ~30 FPS
-            - **Doğruluk:** %94+
-            """)
-
-
-# -----------------------------------------------------------------------------
-# MAIN
-# -----------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    render()
+        if res["rows"]:
+            st.dataframe(create_metrics_dataframe(res["rows"]), use_container_width=True)
+        else:
+            st.info("Bu görüntüde tespit bulunamadı.")
