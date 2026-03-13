@@ -43,8 +43,6 @@ def render():
     with st.sidebar:
         st.markdown("### ⚙️ Ayarlar")
         confidence = st.slider("Güven Eşiği", 0.1, 1.0, 0.25, 0.05)
-        show_masks = st.checkbox("Segmentasyon Maskeleri", value=True)
-        show_boxes = st.checkbox("Bounding Box", value=True)
 
         model = _load_model()
         status_color = "#238636" if model is not None else "#da3633"
@@ -140,6 +138,8 @@ def render():
         else:
             oneri = "Rutin"
         c4.metric("Öneri", oneri)
+
+        st.info(res["recommendation"])
 
         if res["rows"]:
             st.dataframe(create_metrics_dataframe(res["rows"]), use_container_width=True)
