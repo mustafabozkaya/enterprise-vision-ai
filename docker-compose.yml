@@ -1,92 +1,57 @@
-# =============================================================================
 # Enterprise Vision AI - Docker Compose
-# Local development setup
-# =============================================================================
+# Usage:
+#   docker compose up --build        # build and start both services
+#   docker compose up                # start (images already built)
+#   docker compose up api            # start FastAPI only
+#   docker compose up ui             # start Streamlit only
+#   docker compose down              # stop all
+#   docker compose logs -f api       # tail FastAPI logs
 
 services:
-  # ---------------------------------------------------------------------------
-  # Streamlit Application
-  # ---------------------------------------------------------------------------
-  app:
+  api:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: bas-industrial-ai
+      target: api
+    image: vision-api:latest
+    container_name: vision-api
     ports:
-      - "8501:8501"
+      - "8000:8000"
     volumes:
-      - .:/app
-      - ./data:/app/data
-      - ./models:/app/models
+      - uploads:/app/uploads
     environment:
-      - STREAMLIT_SERVER_PORT=8501
-      - STREAMLIT_SERVER_HEADLESS=true
-      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
       - PYTHONUNBUFFERED=1
-      - PYTHONDONTWRITEBYTECODE=1
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501')"]
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
+      start_period: 15s
       retries: 3
-      start_period: 10s
-    networks:
-      - bas-network
 
-  # ---------------------------------------------------------------------------
-  # PostgreSQL Database (optional - for future use)
-  # ---------------------------------------------------------------------------
-  # database:
-  #   image: postgres:15-alpine
-  #   container_name: bas-industrial-db
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_USER=bas_user
-  #     - POSTGRES_PASSWORD=bas_password
-  #     - POSTGRES_DB=bas_industrial
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: unless-stopped
-  #   networks:
-  #     - bas-network
+  ui:
+    build:
+      context: .
+      target: ui
+    image: vision-ui:latest
+    container_name: vision-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
 
-  # ---------------------------------------------------------------------------
-  # Redis Cache (optional - for future use)
-  # ---------------------------------------------------------------------------
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: bas-industrial-redis
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   restart: unless-stopped
-  #   networks:
-  #     - bas-network
-
-  # ---------------------------------------------------------------------------
-  # MLflow Tracking Server (optional - for future use)
-  # ---------------------------------------------------------------------------
-  # mlflow:
-  #   image: ghcr.io/mlflow/mlflow:latest
-  #   container_name: bas-industrial-mlflow
-  #   ports:
-  #     - "5000:5000"
-  #   volumes:
-  #     - mlflow_artifacts:/mlflow/artifacts
-  #   environment:
-  #     - MLFLOW_BACKEND_STORE=sqlite:///mlflow.db
-  #     - MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
-  #   restart: unless-stopped
-  #   networks:
-  #     - bas-network
-
-# -----------------------------------------------------------------------------
-# Networks
-# -----------------------------------------------------------------------------
-networks:
-  bas-network:
-    driver: bridge
+volumes:
+  uploads:
+    driver: local
