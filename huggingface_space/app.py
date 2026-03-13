@@ -198,15 +198,11 @@ with gr.Blocks(theme=gr.themes.Base()) as demo:
 
     with gr.Tabs():
         with gr.Tab("🔍 Defekt Tespiti"):
-            gr.Markdown(
-                "Yüzey kusurlarını tespit eder, anomali skoru ve bakım önerisi üretir."
-            )
+            gr.Markdown("Yüzey kusurlarını tespit eder, anomali skoru ve bakım önerisi üretir.")
             with gr.Row():
                 with gr.Column():
                     defect_img_input = gr.Image(type="pil", label="Görüntü Yükle")
-                    defect_conf = gr.Slider(
-                        0.1, 1.0, value=0.25, step=0.05, label="Güven Eşiği"
-                    )
+                    defect_conf = gr.Slider(0.1, 1.0, value=0.25, step=0.05, label="Güven Eşiği")
                     defect_btn = gr.Button("🔍 Analiz Et", variant="primary")
                 with gr.Column():
                     defect_img_output = gr.Image(type="pil", label="Sonuç")
@@ -231,9 +227,7 @@ with gr.Blocks(theme=gr.themes.Base()) as demo:
             with gr.Row():
                 with gr.Column():
                     ore_img_input = gr.Image(type="pil", label="Görüntü Yükle")
-                    ore_conf = gr.Slider(
-                        0.1, 1.0, value=0.25, step=0.05, label="Güven Eşiği"
-                    )
+                    ore_conf = gr.Slider(0.1, 1.0, value=0.25, step=0.05, label="Güven Eşiği")
                     ore_btn = gr.Button("💎 Analiz Et", variant="primary")
                 with gr.Column():
                     ore_img_output = gr.Image(type="pil", label="Sonuç")
